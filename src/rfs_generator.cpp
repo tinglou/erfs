@@ -251,16 +251,23 @@ static int generate_all (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir
         << std::endl
         << "#include \"resource_fs.h\"" << std::endl
         << std::endl
-        << "const RfsFileSystem rfs_" << id << " = {" << std::endl
+
+        << "static const RfsFileSystem rfs_" << id << "_;" << std::endl
+        << "const RfsFileSystem* rfs_" << id << "(){" << std::endl
+        << "  return &rfs_" << id << "_;" << std::endl
+        << "}" << std::endl
+        << std::endl
+        
+        << "static const RfsFileSystem rfs_" << id << "_ = {" << std::endl
         << "  // entry_count" << std::endl
-        << "  " << ctx.ordinal << ',' << std::endl
+        << "  .entry_count = " << ctx.ordinal << ',' << std::endl
         ;
     // dir tree
     generate_dir(os, dir);
     os  << "," << std::endl;
 
     os  << "  // data_size" << std::endl
-        << "  " << ctx.offset << ',' << std::endl
+        << "  .data_size = " << ctx.offset << ',' << std::endl
         ;
 
     // data heap
@@ -328,7 +335,7 @@ static int generate_dir_itr (std::ostream& os, std::shared_ptr<RfsGenDirectory>&
 
 static int generate_dir (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir) {
     os << "  // directory tree: {name_offset, name_length, data_offset, data_size, flags}" << std::endl;
-    os << "  (RfsEntry[]){" << std::endl;
+    os << "  .entries = (RfsEntry[]){" << std::endl;
     generate_dir_entry(os, dir);
     generate_dir_itr(os, dir);
     os << std::endl << "  }";
@@ -423,7 +430,7 @@ static int generate_data_dir_itr (std::ostream& os, std::shared_ptr<RfsGenDirect
 
 static int generate_data (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir){
     os << "  // BEGIN: file/directory names and contents" << std::endl;
-    os << "  (uint8_t *)" << std::endl;
+    os << "  .data = (uint8_t *)" << std::endl;
     CodegenContext ctx = {0, 0, 0};
     generate_data_dir_itr(os, dir, ctx);
     os << "  // END: file/directory names and contents" << std::endl;

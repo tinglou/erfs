@@ -2,9 +2,11 @@
 #include "resource_fs.h"
 
 // #include "rfs_rfsrc.c"
-extern const RfsFileSystem rfs_rfsrc;
+extern "C" const RfsFileSystem* rfs_rfsrc();
 
 namespace {
+const RfsFileSystem &fs = *rfs_rfsrc();
+
 
 extern "C" int list_callback (const RfsFileSystem *fs, const RfsHandle entry, enum RfsTravelType type, void* ctx) {
     int* indent = reinterpret_cast<int*>(ctx);
@@ -37,14 +39,14 @@ extern "C" int list_callback (const RfsFileSystem *fs, const RfsHandle entry, en
 
 TEST(RFS, travel) {
     int indent = 0;
-    int result = rfs_travel(&rfs_rfsrc, list_callback, &indent);
+    int result = rfs_travel(&fs, list_callback, &indent);
     EXPECT_EQ(result, 0);
 }
 
 TEST(RFS, read_ok) {
     const uint8_t * buff;
     uint32_t size;
-    int result = rfs_read(&rfs_rfsrc, (const uint8_t *)"/resource_fs.h", &buff, &size);
+    int result = rfs_read(&fs, (const uint8_t *)"/resource_fs.h", &buff, &size);
     EXPECT_EQ(result, RFS_OK);
 }
 
@@ -53,20 +55,20 @@ TEST(RFS, read_fail_faile) {
     uint32_t size;
     int result;
     
-    result = rfs_read(&rfs_rfsrc, (const uint8_t *)"/hello.h", &buff, &size);
+    result = rfs_read(&fs, (const uint8_t *)"/hello.h", &buff, &size);
     EXPECT_EQ(result, RFS_NOT_FOUND);
 
-    result = rfs_read(&rfs_rfsrc, (const uint8_t *)"/", &buff, &size);
+    result = rfs_read(&fs, (const uint8_t *)"/", &buff, &size);
     EXPECT_EQ(result, RFS_NOT_FILE);
 
     result = rfs_read(NULL, (const uint8_t *)"/", &buff, &size);
     EXPECT_EQ(result, RFS_INVALID_INPUT);
 
-    result = rfs_read(&rfs_rfsrc, (const uint8_t *)NULL, &buff, &size);
+    result = rfs_read(&fs, (const uint8_t *)NULL, &buff, &size);
     EXPECT_EQ(result, RFS_INVALID_INPUT);
 
     // treat "" as "/"
-    result = rfs_read(&rfs_rfsrc, (const uint8_t *)"", &buff, &size);
+    result = rfs_read(&fs, (const uint8_t *)"", &buff, &size);
     EXPECT_EQ(result, RFS_NOT_FILE);
 }
 
@@ -78,7 +80,7 @@ TEST(RFS, read_open_dir) {
     uint32_t flags;
     int result;
 
-    result = rfs_open(&rfs_rfsrc, (const uint8_t *)"/", &handle, &size);
+    result = rfs_open(&fs, (const uint8_t *)"/", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
 
     flags = rfs_entryflags(handle);
@@ -95,7 +97,7 @@ TEST(RFS, read_open_file) {
     uint32_t flags;
     int result;
 
-    result = rfs_open(&rfs_rfsrc, (const uint8_t *)"/main.cpp", &handle, &size);
+    result = rfs_open(&fs, (const uint8_t *)"/main.cpp", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
 
     flags = rfs_entryflags(handle);
