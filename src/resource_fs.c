@@ -24,10 +24,8 @@ int rfs_read(const RfsFileSystem *fs, const uint8_t *path, const uint8_t **out, 
 
 
 static int strcmp_withlength (const uint8_t *s1, int l1, const uint8_t *s2, int l2) {
-    int minlen;
-    int cmp;
-    minlen = (l1 > l2)? l1 : l2;
-    for(int i = 0; i < minlen; i++){
+    int minlen = (l1 > l2)? l1 : l2;
+    for(int i = 0; i < minlen; i++, s1++, s2++){
         if(*s1 < *s2) {
             return -1;
         } else if(*s1 > *s2){
@@ -57,6 +55,7 @@ static int rfs_find(const RfsFileSystem *fs, const RfsHandle handle, const uint8
         mentry = A + m;
         mname = fs->data + mentry->name_offset;
         mlen = mentry->name_size;
+
         cmp = strcmp_withlength(mname, mlen, name, len);
         if (cmp < 0) {
             L = m + 1;
@@ -67,7 +66,7 @@ static int rfs_find(const RfsFileSystem *fs, const RfsHandle handle, const uint8
             return RFS_OK;
         }
     }
-
+    out = 0;
     return RFS_NOT_FOUND;
 }
 
@@ -99,7 +98,7 @@ int rfs_open(const RfsFileSystem *fs, const uint8_t *path, RfsHandle *out, uint3
     }
 
     int result;
-    RfsHandle entry;
+    RfsHandle entry = 0;
     const uint8_t *start = pos;
     int len;
     while (*pos != 0) {
@@ -118,6 +117,7 @@ int rfs_open(const RfsFileSystem *fs, const uint8_t *path, RfsHandle *out, uint3
             // path isn't end but reach a regular file
             return RFS_NOT_FOUND;
         }
+        dir = entry;
         pos++;
         start = pos;
     }

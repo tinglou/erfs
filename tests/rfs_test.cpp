@@ -86,8 +86,6 @@ TEST(RFS, read_open_dir) {
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_DIRECTORY);    
 
-
-
 }
 
 TEST(RFS, read_open_file) {
@@ -97,11 +95,25 @@ TEST(RFS, read_open_file) {
     uint32_t flags;
     int result;
 
-    result = rfs_open(&fs, (const uint8_t *)"/main.cpp", &handle, &size);
+    result = rfs_open(&fs, (const uint8_t *)"/bin", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
+    flags = rfs_entryflags(handle);
+    EXPECT_EQ(flags, RFS_DIRECTORY);  
 
+    result = rfs_open(&fs, (const uint8_t *)"/bin/main.cpp", &handle, &size);
+    EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, 0);    
+
+    result = rfs_open(&fs, (const uint8_t *)"/bin/rfs_generator.cpp", &handle, &size);
+    EXPECT_EQ(result, RFS_OK);    
+    flags = rfs_entryflags(handle);
+    EXPECT_EQ(flags, 0);  
+
+    result = rfs_open(&fs, (const uint8_t *)"/bin/rfs_generator.h", &handle, &size);
+    EXPECT_EQ(result, RFS_OK);    
+    flags = rfs_entryflags(handle);
+    EXPECT_EQ(flags, 0);  
 }
 
 

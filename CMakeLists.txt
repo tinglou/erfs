@@ -36,7 +36,7 @@ add_executable(${RFS_APP}  "${RFS_APP_FILES}")
 #
 function(gen_rfs_source sourcedir id target)
     add_custom_command(
-        OUTPUT ${target}/rfs_${id}.c
+        OUTPUT ${target}/rfs_${id}.c ${target}/rfs_${id}.h
         COMMAND ${RFS_APP} ${sourcedir} ${id} ${target}
         COMMENT "Generating resourc_fs .c source file from: ${sourcedir}"
     )
