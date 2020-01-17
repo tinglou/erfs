@@ -11,21 +11,17 @@
 
 namespace fs = std::filesystem;
 
-struct CodegenContext {
-    int ordinal;
-    int offset;
-    int escape;
-};
-
 class RfsGenEntry {
 private:
     std::string name_;
     fs::path    path_;
     uint32_t    flags_;
-    int         size_;
+    
     int         ordinal_;
     int         name_offset_;
+
     int         data_offset_;
+    int         size_;
 public:
     const auto& name() {return name_;}
     auto& name(const std::string& name){
@@ -86,11 +82,7 @@ public:
 };
 
 static int build_tree(std::shared_ptr<RfsGenDirectory>& dir);
-static int calculate_offset (std::shared_ptr<RfsGenDirectory>& dir, CodegenContext &ctx);
-
-static int generate_all (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id, const CodegenContext &ctx);
-static int generate_dir (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir);
-static int generate_data (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir);
+static int generate_all (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id);
 
 ///
 /// generate RFS .c source file
@@ -121,49 +113,28 @@ int generate_rfs(const char *path, const char *id, int options, const char *targ
 
 
     //
-    // phase 1: generate the directory tree and check the total disk usage of the source directory
+    // phase 1: build the directory tree
     //
     auto root = std::make_shared<RfsGenDirectory>();
     std::cout << "processing: " << source << std::endl;
 
-    root->path(source).name("/").size(1);
+    root->path(source).name("/");
     if (!(fs::is_directory(source))) {
-        auto s = fs::file_size(source);
-        if (s > RFS_MAX_SIZE) {
-            // std::cout << __FILE__ << ":" << __LINE__ << std::endl;
-            return RFS_SOURCE_TOO_LARGE;
-        }
         auto file = std::make_shared<RfsGenFile>();
         file->path(source).name(source.filename());
-        file->size(s + file->name().length());
 
         root->path(source.parent_path());
         root->entries().push_back(file);
-        root->size(root->size() + file->size());
     } else {
         result = build_tree(root);
-        if(result < 0) {
-            std::cout << __FILE__ << ":" << __LINE__ << std::endl;
-
-            std::cout << "TOO LARGE" << std::endl;
-        }
     }
-
-    // calculate offset
-    CodegenContext ctx = {0, 0};
-
-    root->ordinal(ctx.ordinal++);
-    root->name_offset(ctx.offset);
-    ctx.offset += root->name().length();
-    calculate_offset(root, ctx);
 
     //
     // phase 2: generate the RFS source file
     //
     // root->debug(0);
     std::ofstream ofs(rfsfile);
-    generate_all(ofs, root, id, ctx);
-
+    generate_all(ofs, root, id);
 
     return 0;
 }
@@ -181,33 +152,12 @@ static int build_tree(std::shared_ptr<RfsGenDirectory>& dir) {
         if (fs::is_directory(path)) {
             auto subdir = std::make_shared<RfsGenDirectory>();
             subdir->name(path.filename()).path(path);
-            subdir->size(subdir->name().length());
-
             result = build_tree(subdir);
-            if(result < 0) {
-                std::cout << __FILE__ << ":" << __LINE__ << std::endl;
-                return result;
-            }
             dir->entries().push_back(subdir);
-            dir->size(dir->size() + subdir->size());
         } else {
-            auto s = fs::file_size(path);
-            if (s > RFS_MAX_SIZE) {
-                std::cout << __FILE__ << ":" << __LINE__ << std::endl;
-                return RFS_SOURCE_TOO_LARGE;
-            }
-
             auto file = std::make_shared<RfsGenFile>();
             file->name(path.filename()).path(path);
-            file->size(file->name().length() + s);
-            // std::cout << "processing: " << path << " ,size: " << file->size() << std::endl;
-
             dir->entries().push_back(file);
-            dir->size(dir->size() + file->size());
-        }
-        if (dir->size() > RFS_MAX_SIZE) {
-            std::cout << __FILE__ << ":" << __LINE__ << std::endl;
-            return RFS_SOURCE_TOO_LARGE;
         }
     }
 
@@ -216,34 +166,68 @@ static int build_tree(std::shared_ptr<RfsGenDirectory>& dir) {
         return left->name() < (right->name());
     });
     
-    // std::cout << "processing: " << dir->path() << " ,size: " << dir->size() << std::endl;
     return result;
 }
 
-static int calculate_offset (std::shared_ptr<RfsGenDirectory>& dir, CodegenContext &ctx){
-    // ordinal in dir tree
-    for (auto en : dir->entries()) {
-        en->ordinal(ctx.ordinal++);
-    }
+enum RfsGenTravelType {
+    RFSGEN_TRAVEL_DIR_ENTER,
+    RFSGEN_TRAVEL_DIR_LEAVE,
+    RFSGEN_TRAVEL_ENTRY,
+};
 
-    // name and data offset
-    for (auto en : dir->entries()) {
-        en->name_offset(ctx.offset);
-        ctx.offset += en->name().length();
+typedef int (*rfsgen_visit) (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
 
-        if (en->is_directory()) {
-            auto subdir = std::dynamic_pointer_cast<RfsGenDirectory> (en);
-            calculate_offset (subdir, ctx);
-        } else {
-            en->data_offset(ctx.offset);
-            ctx.offset += en->size() - en->name().length();
+static int rfsgen_travel_tree(std::shared_ptr<RfsGenEntry>& entry, rfsgen_visit callback, void* ctx) {
+    int result = 0;
+
+    if (entry->is_directory()) {
+        result = (*callback)(entry, RFSGEN_TRAVEL_DIR_ENTER, ctx);
+        if (result) {
+            return result;
         }
-    }
 
-    return 0;
+        // directory entries
+        std::shared_ptr<RfsGenDirectory> dir = std::dynamic_pointer_cast<RfsGenDirectory> (entry);
+        // pass 1: all entries
+        for (auto& en: dir->entries()) {
+            result = (*callback)(en, RFSGEN_TRAVEL_ENTRY, ctx);
+            if (result) {
+                return result;
+            }
+        }
+        // pass 2: subdirectory
+        for (auto& en: dir->entries()) {
+            if(en->is_directory()) {
+                result = rfsgen_travel_tree(en, callback, ctx);
+                if (result) {
+                    return result;
+                }
+            }
+        }
+
+        result = (*callback)(entry, RFSGEN_TRAVEL_DIR_LEAVE, ctx);
+        if (result) {
+            return result;
+        }
+    } else {
+        return -1;
+    }
+    return result;
 }
 
-static int generate_all (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id, const CodegenContext &ctx) {
+static int callback_data_entry_name(std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
+static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
+static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
+
+struct CodegenContext {
+    std::ostream& os;
+    int ordinal;
+    int offset;
+    int escape;
+    bool first;
+};
+
+static int generate_all (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id) {
     os  << "/**" << std::endl
         << " PLEASE DO NOT EDIT THIS FILE, because it's generated by rfs_generator automatically." << std::endl
         << " rfs_generator is used to embed all content of a directory into a .c sourcde file." << std::endl
@@ -258,99 +242,56 @@ static int generate_all (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir
         << "}" << std::endl
         << std::endl
         
-        << "static const RfsFileSystem rfs_" << id << "_ = {" << std::endl
-        << "  // entry_count" << std::endl
-        << "  .entry_count = " << ctx.ordinal << ',' << std::endl
-        ;
-    // dir tree
-    generate_dir(os, dir);
-    os  << "," << std::endl;
+        << "static const RfsFileSystem rfs_" << id << "_ = {" << std::endl;
+
+
+    // 
+    // The .data section has 2 parts:
+    // 1. directory and file names 
+    // 2. file contents
+    //
+    os << "  .data = (uint8_t *)" << std::endl;
+    CodegenContext ctx = {os, 0, 0, 0, true};
+    std::shared_ptr<RfsGenEntry> entry = std::dynamic_pointer_cast<RfsGenEntry> (dir);
+    
+    os << "  // entry names" << std::endl;
+    callback_data_entry_name(entry, RFSGEN_TRAVEL_ENTRY, &ctx);
+    rfsgen_travel_tree(entry, callback_data_entry_name, &ctx);
+
+    os << "  // file contents" << std::endl;
+    rfsgen_travel_tree(entry, callback_data_file_content, &ctx);
+
+    // 
+    // .data_size
+    //
+    os  << "  ," << std::endl;
 
     os  << "  // data_size" << std::endl
-        << "  .data_size = " << ctx.offset << ',' << std::endl
-        ;
+        << "  .data_size = " << ctx.offset;
 
-    // data heap
-    generate_data(os, dir);
+    // 
+    // .entry_count
+    //
+    os  << "," << std::endl;
+    os << "  // entry_count" << std::endl
+        << "  .entry_count = " << ctx.ordinal;
+
+    // 
+    // .entries
+    //
+    os  << "," << std::endl;
+    os << "  // directory tree: {name_offset, name_length, data_offset, data_size, flags}" << std::endl;
+    os << "  .entries = (RfsEntry[]){" << std::endl;
+    callback_directory_entry(entry, RFSGEN_TRAVEL_ENTRY, &ctx);
+    rfsgen_travel_tree(entry, callback_directory_entry, &ctx);
+    os << std::endl << "  }";
+
     os  << std::endl;
-
     os  << "};" << std::endl;
     return 0;
 }
 
-//
-//  generate directory tree
-//
-static int generate_dir_entry (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir) {
-    os  << "    // [" << dir->ordinal() << "]: "  << dir->path() << std::endl
-        << "    {"
-        // name
-        <<  dir->name_offset() << ", " << dir->name().length() ;
-    // directory entries
-    if (dir->entries().size() > 0) {
-        os << ", " << dir->entries()[0]->ordinal() << ", " << dir->entries().size();
-    } else {
-        os << ", 0, 0";
-    }
-    // FLAGS
-    os  << ", RFS_DIRECTORY}";
-    return 0;
-}
 
-static int generate_file_entry (std::ostream& os, std::shared_ptr<RfsGenEntry>& file) {
-    os  << "    // [" << file->ordinal() << "]: " << file->path() << std::endl
-        << "    {"
-        // name
-        << file->name_offset() << ", " << file->name().length()
-        // content
-        << ", " << file->data_offset() << ", " << (file->size() -  file->name().length())
-        // flags
-        << ", 0}";
-    return 0;
-}
-
-
-static int generate_dir_itr (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir) {
-    // directory entires
-    for (auto en : dir->entries()) {
-        if (en->is_directory()) {
-            auto subdir = std::dynamic_pointer_cast<RfsGenDirectory> (en);
-            os << "," << std::endl;
-            generate_dir_entry(os, subdir);
-        } else {
-            os << "," << std::endl;
-            generate_file_entry(os, en);
-        }
-    }
-
-    // all subdirectores
-    for (auto en : dir->entries()) {
-        if (en->is_directory()) {
-            auto subdir = std::dynamic_pointer_cast<RfsGenDirectory> (en);
-            generate_dir_itr(os, subdir);
-        }
-    }
-    return 0;
-}
-
-static int generate_dir (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir) {
-    os << "  // directory tree: {name_offset, name_length, data_offset, data_size, flags}" << std::endl;
-    os << "  .entries = (RfsEntry[]){" << std::endl;
-    generate_dir_entry(os, dir);
-    generate_dir_itr(os, dir);
-    os << std::endl << "  }";
-    return 0;
-}
-
-//
-//  generate content
-//
-static int generate_data_dir (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir) {
-    os << "  // [" << dir->ordinal() << "] DIR: "  << dir->path() << std::endl;
-    // name
-    os << "  \"" << dir->name() << "\"" << std::endl;
-    return 0;
-}
 
 /// https://en.cppreference.com/w/cpp/string/byte/isprint
 /// https://en.cppreference.com/w/cpp/language/string_literal
@@ -381,12 +322,50 @@ static std::string escape_char(unsigned char ch) {
     return "";
 }
 
-static int generate_data_file (std::ostream& os, std::shared_ptr<RfsGenEntry>& file, CodegenContext &ctx) {
-    os << "  // [" << file->ordinal() << "] FILE: "  << file->path() << std::endl;
-    // name
-    os << "  \"" << file->name() << "\"" << std::endl;
-    // content
-    std::ifstream ifs(file->path());
+static void output_line(std::ostream& os, const uint8_t* buf, int len, CodegenContext &ctx) {
+    os << "\"";
+    for (int i = 0; i < len; i++) {
+        auto str = escape_char(buf[i]);
+        int cur_escape = (str.length() < 4)? 0 : 1;
+        if ((ctx.escape ^ cur_escape) != 0) {
+            ctx.escape ^= 1;
+            os << "\" \"";
+        }
+        os << str;
+    }
+    os << "\"" << std::endl;
+}
+
+static int callback_data_entry_name(std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx) {
+    if (RFSGEN_TRAVEL_ENTRY == type) {
+        CodegenContext* c = reinterpret_cast<CodegenContext*>(ctx);
+        entry->ordinal(c->ordinal);
+        entry->name_offset(c->offset);
+        
+        c->ordinal++;
+        c->offset += entry->name().length();
+        
+        const char* t = entry->is_directory() ? "D" : "F";
+        c->os << "    // " << t << "[" << entry->ordinal() << "]: "  << entry->path() << std::endl;
+        c->os << "  "; 
+        output_line(c->os, (uint8_t*)(entry->name().c_str()), entry->name().length(), *c); 
+    }
+    return 0;
+}
+
+static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx) {
+    if (RFSGEN_TRAVEL_ENTRY != type || entry->is_directory()) {
+        return 0;
+    }
+
+    CodegenContext* c = reinterpret_cast<CodegenContext*>(ctx);
+
+    entry->data_offset(c->offset);
+    entry->size(fs::file_size(entry->path()));
+    c->offset += entry->size();
+
+    c->os << "  // [" << entry->ordinal() << "]: "  << entry->path() << std::endl;
+    std::ifstream ifs(entry->path());
     unsigned char buf[128];
     int len;
     while (true) {
@@ -395,44 +374,47 @@ static int generate_data_file (std::ostream& os, std::shared_ptr<RfsGenEntry>& f
         if(len <= 0) {
             break;
         }
-        os << "  \"";
-        for (int i = 0; i < len; i++) {
-            auto str = escape_char(buf[i]);
-            int cur_escape = (str.length() < 4)? 0 : 1;
-            if ((ctx.escape ^ cur_escape) != 0) {
-                ctx.escape ^= 1;
-                os << "\" \"";
-            }
-            os << str;
-        }
-        os << "\"" << std::endl;
+        c->os << "  ";
+        output_line(c->os, buf, len, *c);
     }
-
     return 0;
 }
 
+static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx) {
+    if (RFSGEN_TRAVEL_ENTRY != type) {
+        return 0;
+    }
 
-static int generate_data_dir_itr (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, CodegenContext &ctx) {
-    generate_data_dir(os, dir);
+    CodegenContext* c = reinterpret_cast<CodegenContext*>(ctx);
+    if(c->first) {
+        c->first = false;
+    } else {
+        c->os << "," << std::endl;
+    }
 
-    // directory entires
-    for (auto en : dir->entries()) {
-        if (en->is_directory()) {
-            auto subdir = std::dynamic_pointer_cast<RfsGenDirectory> (en);
-            generate_data_dir_itr(os, subdir, ctx);
+    if(entry->is_directory()) {
+        c->os << "    // [" << entry->ordinal() << "]: "  << entry->path() << std::endl
+            << "    {"
+            // name
+            <<  entry->name_offset() << ", " << entry->name().length() ;
+        // directory entries
+        auto dir = std::dynamic_pointer_cast<RfsGenDirectory>(entry);
+        if (dir->entries().size() > 0) {
+            c->os << ", " << dir->entries()[0]->ordinal() << ", " << dir->entries().size();
         } else {
-            generate_data_file(os, en, ctx);
+            c->os << ", 0, 0";
         }
+        // FLAGS
+        c->os  << ", RFS_DIRECTORY}";
+    } else {
+        c->os  << "    // [" << entry->ordinal() << "]: " << entry->path() << std::endl
+            << "    {"
+            // name
+            << entry->name_offset() << ", " << entry->name().length()
+            // content
+            << ", " << entry->data_offset() << ", " << entry->size()
+            // flags
+            << ", 0}";
     }
-
-    return 0;
-}
-
-static int generate_data (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir){
-    os << "  // BEGIN: file/directory names and contents" << std::endl;
-    os << "  .data = (uint8_t *)" << std::endl;
-    CodegenContext ctx = {0, 0, 0};
-    generate_data_dir_itr(os, dir, ctx);
-    os << "  // END: file/directory names and contents" << std::endl;
     return 0;
 }
