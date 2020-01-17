@@ -26,8 +26,8 @@ add_library(${RFS_ROM} STATIC "${RFS_ROM_FILES}")
 #
 set(RFS_APP "rfs_generator")
 set(RFS_APP_FILES 
-    src/main.cpp
-    src/rfs_generator.cpp
+    src/bin/main.cpp
+    src/bin/rfs_generator.cpp
     )
 add_executable(${RFS_APP}  "${RFS_APP_FILES}")
 
