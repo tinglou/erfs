@@ -1,14 +1,14 @@
 #include "gtest/gtest.h"
 #include "resource_fs.h"
 
-// #include "rfs_rfsrc.c"
-extern "C" const RfsFileSystem* rfs_rfsrc();
+#include "rfs_rfsrc.h"
+
 
 namespace {
-const RfsFileSystem &fs = *rfs_rfsrc();
+const RfsRoot fs = rfs_rfsrc();
 
 
-extern "C" int list_callback (const RfsFileSystem *fs, const RfsHandle entry, enum RfsTravelType type, void* ctx) {
+extern "C" int list_callback (const RfsRoot fs, const RfsHandle entry, enum RfsTravelType type, void* ctx) {
     int* indent = reinterpret_cast<int*>(ctx);
     int backup_indent = *indent;
     const uint8_t* name;
@@ -31,7 +31,8 @@ extern "C" int list_callback (const RfsFileSystem *fs, const RfsHandle entry, en
         for (int i = 0; i < backup_indent; i++) {
             std::cout << "  ";
         }
-        std::cout << std::string((char*)name, (int)name_len) << ((entry->flags) ? " [GZIPPED]" : "") << std::endl;
+        auto flags = rfs_entryflags(entry);
+        std::cout << std::string((char*)name, (int)name_len) << ((flags != 0) ? " [GZIPPED]" : "") << std::endl;
     }
 
     return 0;
@@ -39,14 +40,14 @@ extern "C" int list_callback (const RfsFileSystem *fs, const RfsHandle entry, en
 
 TEST(RFS, travel) {
     int indent = 0;
-    int result = rfs_travel(&fs, list_callback, &indent);
+    int result = rfs_travel(fs, list_callback, &indent);
     EXPECT_EQ(result, 0);
 }
 
 TEST(RFS, read_ok) {
     const uint8_t * buff;
     uint32_t size;
-    int result = rfs_read(&fs, (const uint8_t *)"/resource_fs.h", &buff, &size);
+    int result = rfs_read(fs, (const uint8_t *)"/resource_fs.h", &buff, &size);
     EXPECT_EQ(result, RFS_OK);
 }
 
@@ -55,20 +56,20 @@ TEST(RFS, read_fail_faile) {
     uint32_t size;
     int result;
     
-    result = rfs_read(&fs, (const uint8_t *)"/hello.h", &buff, &size);
+    result = rfs_read(fs, (const uint8_t *)"/hello.h", &buff, &size);
     EXPECT_EQ(result, RFS_NOT_FOUND);
 
-    result = rfs_read(&fs, (const uint8_t *)"/", &buff, &size);
+    result = rfs_read(fs, (const uint8_t *)"/", &buff, &size);
     EXPECT_EQ(result, RFS_NOT_FILE);
 
     result = rfs_read(NULL, (const uint8_t *)"/", &buff, &size);
     EXPECT_EQ(result, RFS_INVALID_INPUT);
 
-    result = rfs_read(&fs, (const uint8_t *)NULL, &buff, &size);
+    result = rfs_read(fs, (const uint8_t *)NULL, &buff, &size);
     EXPECT_EQ(result, RFS_INVALID_INPUT);
 
     // treat "" as "/"
-    result = rfs_read(&fs, (const uint8_t *)"", &buff, &size);
+    result = rfs_read(fs, (const uint8_t *)"", &buff, &size);
     EXPECT_EQ(result, RFS_NOT_FILE);
 }
 
@@ -80,7 +81,7 @@ TEST(RFS, read_open_dir) {
     uint32_t flags;
     int result;
 
-    result = rfs_open(&fs, (const uint8_t *)"/", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
 
     flags = rfs_entryflags(handle);
@@ -95,22 +96,22 @@ TEST(RFS, read_open_file) {
     uint32_t flags;
     int result;
 
-    result = rfs_open(&fs, (const uint8_t *)"/bin", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/bin", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_DIRECTORY);  
 
-    result = rfs_open(&fs, (const uint8_t *)"/bin/main.cpp", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/bin/main.cpp", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_GZIPPED);    
 
-    result = rfs_open(&fs, (const uint8_t *)"/bin/rfs_generator.cpp", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/bin/rfs_generator.cpp", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_GZIPPED);  
 
-    result = rfs_open(&fs, (const uint8_t *)"/bin/rfs_generator.h", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/bin/rfs_generator.h", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, 0);  

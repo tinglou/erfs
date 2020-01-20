@@ -84,6 +84,7 @@ public:
 static int build_tree(std::shared_ptr<RfsGenDirectory>& dir);
 static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id, int options);
 static int generate_header (std::ostream& os, const std::string& id);
+static int generate_rust (std::ostream& os, const std::string& id);
 
 ///
 /// generate RFS .c source file
@@ -143,6 +144,14 @@ int generate_rfs(const char *path, const char *id, int options, const char *targ
         std::ofstream ofs(rfsfile);
         std::cout << "Generating header: " << rfsfile << std::endl;
         generate_header(ofs, id);
+    }
+    {
+        // rust(.rs) file
+        std::string name = std::string("rfs_") + std::string(id) + std::string(".rs");
+        fs::path rfsfile = target / name;
+        std::ofstream ofs(rfsfile);
+        std::cout << "Generating Ruet: " << rfsfile << std::endl;
+        generate_rust(ofs, id);
     }
 
     return 0;
@@ -251,7 +260,13 @@ static int print_license(std::ostream& os) {
 
 static int generate_header (std::ostream& os, const std::string& id) {
     print_license(os);
-    os  << "#include \"resource_fs.h\"" << std::endl
+    os  << "#pragma once" << std::endl
+        << std::endl
+        << "#if defined(__RFS_IMPL__)" << std::endl
+        << "#include \"resource_fs.h\"" << std::endl
+        << "#else // defined(__RFS_IMPL__)" << std::endl
+        << "typedef void* RfsRoot;" << std::endl
+        << "#endif // defined(__RFS_IMPL__)" << std::endl
         << std::endl;
 
     os  << "#if defined(__cplusplus)" << std::endl
@@ -259,7 +274,7 @@ static int generate_header (std::ostream& os, const std::string& id) {
         << "#endif" << std::endl
         << std::endl;
 
-    os  << "const RfsFileSystem* rfs_" << id << "();" << std::endl
+    os  << "const RfsRoot rfs_" << id << "();" << std::endl
         << std::endl;
 
     os  << "#if defined(__cplusplus)" << std::endl
@@ -270,14 +285,27 @@ static int generate_header (std::ostream& os, const std::string& id) {
     return 0;
 }
 
+static int generate_rust (std::ostream& os, const std::string& id) {
+    print_license(os);
+    os  << "pub type RfsRoot = *mut ::std::os::raw::c_void;" << std::endl
+        << std::endl
+        << "extern \"C\" {" << std::endl
+        << "  pub fn rfs_" << id << "() -> RfsRoot;" << std::endl
+        << "}" << std::endl
+        ;
+
+    return 0;
+}
+
 static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id, int options) {
     print_license(os);
-    os  << "#include \"resource_fs.h\"" << std::endl
+    os  << "#define  __RFS_IMPL__" << std::endl
+        << "#include \"rfs_" << id << ".h\"" << std::endl
         << std::endl
 
         << "static const RfsFileSystem rfs_" << id << "_;" << std::endl
-        << "const RfsFileSystem* rfs_" << id << "(){" << std::endl
-        << "  return &rfs_" << id << "_;" << std::endl
+        << "const RfsRoot rfs_" << id << "(){" << std::endl
+        << "  return (const RfsRoot)&rfs_" << id << "_;" << std::endl
         << "}" << std::endl
         << std::endl
         

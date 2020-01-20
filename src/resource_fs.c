@@ -1,3 +1,4 @@
+#define __RFS_IMPL__
 #include "resource_fs.h"
 
 #define CHECK_NULL(V)       if(V == 0) {return RFS_INVALID_INPUT;}
@@ -8,7 +9,7 @@
 ///@param out pointer to the content
 ///@param size file size
 ///@return 0 for success; other for notfound
-int rfs_read(const RfsFileSystem *fs, const uint8_t *path, const uint8_t **out, uint32_t *size) {
+int rfs_read(const RfsRoot fs, const uint8_t *path, const uint8_t **out, uint32_t *size) {
     RfsHandle handle;
     int result = rfs_open (fs, path, &handle, size);
     if (result != 0) {
@@ -40,7 +41,7 @@ static int strcmp_withlength (const uint8_t *s1, int l1, const uint8_t *s2, int 
     return 0;
 }
 
-static int rfs_find(const RfsFileSystem *fs, const RfsHandle handle, const uint8_t *name, int len, RfsHandle *out) {
+static int rfs_find(const RfsRoot fs, const RfsHandle handle, const uint8_t *name, int len, RfsHandle *out) {
     RfsHandle A = fs->entries + handle->data_offset;
     int L = 0;
     int R = (handle->data_size - 1);
@@ -78,7 +79,7 @@ static int rfs_find(const RfsFileSystem *fs, const RfsHandle handle, const uint8
 ///@param out handle
 ///@param size file size or entries in the directory
 ///@return 0 for success; other for notfound
-int rfs_open(const RfsFileSystem *fs, const uint8_t *path, RfsHandle *out, uint32_t *size) {
+int rfs_open(const RfsRoot fs, const uint8_t *path, RfsHandle *out, uint32_t *size) {
     CHECK_NULL(fs);
     CHECK_NULL(path);
     CHECK_NULL(out);
@@ -141,7 +142,7 @@ uint32_t rfs_entryflags(const RfsHandle handle) {
 ///@param out pointer to the content
 ///@param size file size
 ///@return 0 for success; other for notfound
-int rfs_entryname(const RfsFileSystem *fs, const RfsHandle handle, const uint8_t **out, uint32_t *size) {
+int rfs_entryname(const RfsRoot fs, const RfsHandle handle, const uint8_t **out, uint32_t *size) {
     CHECK_NULL(fs);
     CHECK_NULL(handle);
     CHECK_NULL(out);
@@ -157,7 +158,7 @@ int rfs_entryname(const RfsFileSystem *fs, const RfsHandle handle, const uint8_t
 ///@param out pointer to the content
 ///@param size file size
 ///@return 0 for success; other for notfound
-int rfs_readfile(const RfsFileSystem *fs, const RfsHandle handle, const uint8_t **out, uint32_t *size) {
+int rfs_readfile(const RfsRoot fs, const RfsHandle handle, const uint8_t **out, uint32_t *size) {
     CHECK_NULL(fs);
     CHECK_NULL(handle);
     CHECK_NULL(out);
@@ -176,7 +177,7 @@ int rfs_readfile(const RfsFileSystem *fs, const RfsHandle handle, const uint8_t 
 ///@param index entry index
 ///@param out out entry
 ///@return 0 for success; other for notfound
-int rfs_readdir(const RfsFileSystem *fs, const RfsHandle handle, uint32_t index, RfsHandle *out){
+int rfs_readdir(const RfsRoot fs, const RfsHandle handle, uint32_t index, RfsHandle *out){
     CHECK_NULL(fs);
     CHECK_NULL(handle);
     CHECK_NULL(out);
@@ -191,7 +192,7 @@ int rfs_readdir(const RfsFileSystem *fs, const RfsHandle handle, uint32_t index,
 }
 
 
-int rfs_travel_itr(const RfsFileSystem *fs, RfsHandle handle, rfs_visit func, void* ctx) {
+int rfs_travel_itr(const RfsRoot fs, RfsHandle handle, rfs_visit func, void* ctx) {
     int result = 0;
 
     if ((handle->flags & RFS_DIRECTORY) != 0) {
@@ -227,7 +228,7 @@ int rfs_travel_itr(const RfsFileSystem *fs, RfsHandle handle, rfs_visit func, vo
 ///@param func callback function
 ///@param ctx context
 ///@return 0 for success; other for notfound
-int rfs_travel(const RfsFileSystem *fs, rfs_visit func, void* ctx) {
+int rfs_travel(const RfsRoot fs, rfs_visit func, void* ctx) {
     CHECK_NULL(fs);
     CHECK_NULL(func);
 
