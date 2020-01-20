@@ -266,7 +266,7 @@ static int generate_header (std::ostream& os, const std::string& id) {
         << "#if defined(__RFS_IMPL__)" << std::endl
         << "#include \"resource_fs.h\"" << std::endl
         << "#else // defined(__RFS_IMPL__)" << std::endl
-        << "typedef void* RfsRoot;" << std::endl
+        << "typedef const void* RfsRoot;" << std::endl
         << "#endif // defined(__RFS_IMPL__)" << std::endl
         << std::endl;
 
@@ -288,7 +288,7 @@ static int generate_header (std::ostream& os, const std::string& id) {
 
 static int generate_rust (std::ostream& os, const std::string& id) {
     print_license(os);
-    os  << "pub type RfsRoot = *mut ::std::os::raw::c_void;" << std::endl
+    os  << "pub type RfsRoot = *const ::std::os::raw::c_void;" << std::endl
         << std::endl
         << "extern \"C\" {" << std::endl
         << "  pub fn rfs_" << id << "() -> RfsRoot;" << std::endl

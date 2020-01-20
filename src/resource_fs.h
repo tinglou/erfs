@@ -18,7 +18,9 @@ typedef struct  {
     uint32_t data_offset;
     uint32_t data_size;
     uint32_t flags;
-} RfsEntry, *RfsHandle;
+} RfsEntry;
+
+typedef const RfsEntry* RfsHandle;
 
 /// the whole resource filesystem
 typedef struct {
@@ -31,7 +33,7 @@ typedef struct {
     uint8_t  *data;
 } RfsFileSystem;
 
-typedef RfsFileSystem * RfsRoot;
+typedef const RfsFileSystem * RfsRoot;
 #pragma pack()
 
 #if defined(__cplusplus)
@@ -42,8 +44,8 @@ typedef RfsFileSystem * RfsRoot;
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
 
-typedef void* RfsRoot;
-typedef void* RfsHandle;
+typedef const void* RfsRoot;
+typedef const void* RfsHandle;
 #endif // defined(RFS_IMPL)
 
 #if defined(__cplusplus)
