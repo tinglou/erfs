@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
         if(*arg == '-') {
             // options
             if (strcmp("--gzip", arg) == 0) {
-                option |= RFS_GZIPPED;
+                option |= RFSGEN_GZIPPED;
             } else {
                 std::cout << "Unknown option: " << arg << std::endl << std::endl;
                 usage(argv[0]);

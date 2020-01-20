@@ -1,4 +1,5 @@
 #include "rfs_generator.h"
+#include "resource_fs.h"
 
 #include <filesystem>
 #include <fstream>
@@ -318,7 +319,7 @@ static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& 
     // 2. file contents
     //
     os << "  .data = (uint8_t *)" << std::endl;
-    CodegenContext ctx = {os, (options & RFS_GZIPPED) != 0, 0, 0, 0, true};
+    CodegenContext ctx = {os, (options & RFSGEN_GZIPPED) != 0, 0, 0, 0, true};
     std::shared_ptr<RfsGenEntry> entry = std::dynamic_pointer_cast<RfsGenEntry> (dir);
     
     os << "  // entry names" << std::endl;

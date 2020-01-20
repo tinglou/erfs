@@ -1,14 +1,17 @@
 #pragma once
 
-#include "resource_fs.h"
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
+enum RfsGenOption {
+    RFSGEN_GZIPPED          = 2,   // must be same as RFS_GZIPPED
+    RFSGEN_RUST             = 4,
+};
+
 
 ///
-/// access api
+/// status code of access api
 ///
 enum RfsGenStatusCode {
     RFS_GEN_OK                 = 0,
