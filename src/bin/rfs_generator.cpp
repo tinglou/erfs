@@ -82,7 +82,7 @@ public:
 };
 
 static int build_tree(std::shared_ptr<RfsGenDirectory>& dir);
-static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id);
+static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id, int options);
 static int generate_header (std::ostream& os, const std::string& id);
 
 ///
@@ -109,14 +109,10 @@ int generate_rfs(const char *path, const char *id, int options, const char *targ
         return RFS_TARGET_NOT_EXIST;
     }
     
-
-
-
     //
     // phase 1: build the directory tree
     //
     auto root = std::make_shared<RfsGenDirectory>();
-    std::cout << "Packaging: " << source << " to " << target << std::endl;
 
     root->path(source).name("/");
     if (!(fs::is_directory(source))) {
@@ -137,13 +133,15 @@ int generate_rfs(const char *path, const char *id, int options, const char *targ
         std::string name = std::string("rfs_") + std::string(id) + std::string(".c");
         fs::path rfsfile = target / name;
         std::ofstream ofs(rfsfile);
-        generate_source(ofs, root, id);
+        std::cout << "Packaging: " << source << " to " << rfsfile << std::endl;
+        generate_source(ofs, root, id, options);
     }
     {
         // .h header file
         std::string name = std::string("rfs_") + std::string(id) + std::string(".h");
         fs::path rfsfile = target / name;
         std::ofstream ofs(rfsfile);
+        std::cout << "Generating header: " << rfsfile << std::endl;
         generate_header(ofs, id);
     }
 
@@ -231,7 +229,11 @@ static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum
 static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
 
 struct CodegenContext {
+    // config
     std::ostream& os;
+    bool gzip;
+    
+    // state
     int ordinal;
     int offset;
     int escape;
@@ -268,7 +270,7 @@ static int generate_header (std::ostream& os, const std::string& id) {
     return 0;
 }
 
-static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id) {
+static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id, int options) {
     print_license(os);
     os  << "#include \"resource_fs.h\"" << std::endl
         << std::endl
@@ -288,7 +290,7 @@ static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& 
     // 2. file contents
     //
     os << "  .data = (uint8_t *)" << std::endl;
-    CodegenContext ctx = {os, 0, 0, 0, true};
+    CodegenContext ctx = {os, (options & RFS_GZIPPED) != 0, 0, 0, 0, true};
     std::shared_ptr<RfsGenEntry> entry = std::dynamic_pointer_cast<RfsGenEntry> (dir);
     
     os << "  // entry names" << std::endl;
@@ -399,20 +401,28 @@ static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum
     CodegenContext* c = reinterpret_cast<CodegenContext*>(ctx);
     c->os << "  // [" << entry->ordinal() << "]: "  << entry->path() << std::endl;
 
-    fs::path source = entry->path();
-    std::string gzname = source.filename();
-    gzname += ".gz";
-    fs::path dest = fs::temp_directory_path() / gzname;
     fs::path pack_file;
+
+    fs::path source = entry->path();
     bool gzipped = false;
-    int ret = gzip_file(source.c_str(), dest.c_str());
-    if (ret == 0) {
-        gzipped = true;
-        pack_file = dest;
-        entry->flags(RFS_GZIPPED);
+
+    if(c->gzip) {
+        std::string gzname = source.filename();
+        gzname += ".gz";
+        fs::path dest = fs::temp_directory_path() / gzname;
+
+        int ret = gzip_file(source.c_str(), dest.c_str());
+        if (ret == 0) {
+            gzipped = true;
+            pack_file = dest;
+            entry->flags(RFS_GZIPPED);
+        } else {
+            pack_file = source;
+        }
     } else {
         pack_file = source;
     }
+
 
     entry->data_offset(c->offset);
     entry->size(fs::file_size(pack_file));
@@ -432,9 +442,9 @@ static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum
     }
 
     if(gzipped) {
-        std::cout << "Compress file: " << source << ", original size: " << fs::file_size(source) << ", gzipped size: " << entry->size() << std::endl;
+        std::cout << "Compress file " << source << ", original size: " << fs::file_size(source) << ", gzipped size: " << entry->size() << std::endl;
         // remove temp .gz file.
-        fs::remove(dest);
+        fs::remove(pack_file);
     }
     return 0;
 }

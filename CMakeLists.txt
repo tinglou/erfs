@@ -21,6 +21,8 @@ link_directories(
     ${CMAKE_BINARY_DIR}/thirdparties/src/zlib-build
 )
 
+# set(CMAKE_EXE_LINKER_FLAGS "-static-libstdc++")
+
 #
 # Resource Filesystem Readonly
 #
@@ -47,7 +49,7 @@ target_link_libraries(${RFS_APP} libz.a)
 function(gen_rfs_source sourcedir id target)
     add_custom_command(
         OUTPUT ${target}/rfs_${id}.c ${target}/rfs_${id}.h
-        COMMAND ${RFS_APP} ${sourcedir} ${id} ${target}
+        COMMAND ${RFS_APP} --gzip ${sourcedir} ${id} ${target}
         COMMENT "Generating resourc_fs .c source file from: ${sourcedir}"
     )
 endfunction()
@@ -61,12 +63,10 @@ gen_rfs_source("${CMAKE_CURRENT_SOURCE_DIR}/src" "rfsrc" "${CMAKE_CURRENT_BINARY
 set(RFS_UT "rfs_ut")
 set(RFS_UT_FILES tests/rfs_test.cpp ${CMAKE_CURRENT_BINARY_DIR}/rfs_rfsrc.c)
 add_executable(${RFS_UT} ${RFS_UT_FILES} ${RFS_ROM_FILES})
-#set_property(TARGET ${RFS_UT}  PROPERTY CXX_STANDARD 11)
 #target_link_libraries(${RFS_UT}  GTest::GTest GTest::Main -lgcov)
 target_link_libraries(${RFS_UT}  GTest::GTest GTest::Main)
 #set_target_properties(${RFS_UT} PROPERTIES COMPILE_FLAGS "-fprofile-arcs -ftest-coverage")
 add_test(${RFS_UT} ${RFS_UT})
-
 
 #
 #

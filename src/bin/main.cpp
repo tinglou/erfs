@@ -2,12 +2,41 @@
 #include <iostream>
 #include <string>
 
+void usage(const char* prog) {
+    std::cout << "Usage: " << prog << " [options] <src_dir> <id> <dest_dir>" << std::endl;
+    std::cout << "Options:" << std::endl;
+    std::cout << "  --gzip      compress file if needed." << std::endl;    
+}
+
 int main(int argc, char** argv) {
     int result = 0;
-    if (argc != 4) {
-        std::cout << "Usage: " << argv[0] << " <src_dir> <id> <dest_file>" << std::endl;
+    if (argc < 4) {
+        usage(argv[0]);
         return 1;
     }
-    result = generate_rfs(argv[1], argv[2], 0, argv[3]);
+    const char* real_args[3] = {0};
+    int pos = 0;
+    int option = 0;
+    for(int i = 1; i < argc; i++) {
+        char* arg = argv[i];
+        if(*arg == '-') {
+            // options
+            if (strcmp("--gzip", arg) == 0) {
+                option |= RFS_GZIPPED;
+            } else {
+                std::cout << "Unknown option: " << arg << std::endl << std::endl;
+                usage(argv[0]);
+                return 2;
+            }
+        } else {
+            real_args[pos] = arg;
+            pos++;
+        }
+    }
+    if (pos != 3) {
+        usage(argv[0]);
+        return 3;
+    }
+    result = generate_rfs(real_args[0], real_args[1], option, real_args[2]);
     return result;
 }

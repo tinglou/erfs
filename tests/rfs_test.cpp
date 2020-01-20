@@ -22,7 +22,7 @@ extern "C" int list_callback (const RfsFileSystem *fs, const RfsHandle entry, en
         for (int i = 0; i < backup_indent; i++) {
             std::cout << "  ";
         }
-        std::cout << std::string((char*)name, (int)name_len) << std::endl;
+        std::cout << std::string((char*)name, (int)name_len)  << " [DIR]" << std::endl;
     } else if (type == RFS_TRAVEL_DIR_LEAVE) {
         // leave directory
         (*indent)--;
@@ -31,7 +31,7 @@ extern "C" int list_callback (const RfsFileSystem *fs, const RfsHandle entry, en
         for (int i = 0; i < backup_indent; i++) {
             std::cout << "  ";
         }
-        std::cout << std::string((char*)name, (int)name_len) << std::endl;
+        std::cout << std::string((char*)name, (int)name_len) << ((entry->flags) ? " [GZIPPED]" : "") << std::endl;
     }
 
     return 0;
@@ -103,12 +103,12 @@ TEST(RFS, read_open_file) {
     result = rfs_open(&fs, (const uint8_t *)"/bin/main.cpp", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
-    EXPECT_EQ(flags, 0);    
+    EXPECT_EQ(flags, RFS_GZIPPED);    
 
     result = rfs_open(&fs, (const uint8_t *)"/bin/rfs_generator.cpp", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
-    EXPECT_EQ(flags, 0);  
+    EXPECT_EQ(flags, RFS_GZIPPED);  
 
     result = rfs_open(&fs, (const uint8_t *)"/bin/rfs_generator.h", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
