@@ -116,7 +116,7 @@ int generate_rfs(const char *path, const char *id, int options, const char *targ
     // phase 1: build the directory tree
     //
     auto root = std::make_shared<RfsGenDirectory>();
-    std::cout << "processing: " << source << std::endl;
+    std::cout << "Packaging: " << source << " to " << target << std::endl;
 
     root->path(source).name("/");
     if (!(fs::is_directory(source))) {
@@ -390,19 +390,35 @@ static int callback_data_entry_name(std::shared_ptr<RfsGenEntry>& entry, enum Rf
     return 0;
 }
 
+#include "gzip_file.h"
 static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx) {
     if (RFSGEN_TRAVEL_ENTRY != type || entry->is_directory()) {
         return 0;
     }
 
     CodegenContext* c = reinterpret_cast<CodegenContext*>(ctx);
+    c->os << "  // [" << entry->ordinal() << "]: "  << entry->path() << std::endl;
+
+    fs::path source = entry->path();
+    std::string gzname = source.filename();
+    gzname += ".gz";
+    fs::path dest = fs::temp_directory_path() / gzname;
+    fs::path pack_file;
+    bool gzipped = false;
+    int ret = gzip_file(source.c_str(), dest.c_str());
+    if (ret == 0) {
+        gzipped = true;
+        pack_file = dest;
+        entry->flags(RFS_GZIPPED);
+    } else {
+        pack_file = source;
+    }
 
     entry->data_offset(c->offset);
-    entry->size(fs::file_size(entry->path()));
+    entry->size(fs::file_size(pack_file));
     c->offset += entry->size();
 
-    c->os << "  // [" << entry->ordinal() << "]: "  << entry->path() << std::endl;
-    std::ifstream ifs(entry->path());
+    std::ifstream ifs(pack_file, std::ios::binary);
     unsigned char buf[128];
     int len;
     while (true) {
@@ -413,6 +429,12 @@ static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum
         }
         c->os << "  ";
         output_line(c->os, buf, len, *c);
+    }
+
+    if(gzipped) {
+        std::cout << "Compress file: " << source << ", original size: " << fs::file_size(source) << ", gzipped size: " << entry->size() << std::endl;
+        // remove temp .gz file.
+        fs::remove(dest);
     }
     return 0;
 }
@@ -442,7 +464,8 @@ static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum R
             c->os << ", 0, 0";
         }
         // FLAGS
-        c->os  << ", RFS_DIRECTORY}";
+        c->os  << ", RFS_DIRECTORY";
+        c->os  << "}";
     } else {
         c->os  << "    // [" << entry->ordinal() << "]: " << entry->path() << std::endl
             << "    {"
@@ -451,7 +474,11 @@ static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum R
             // content
             << ", " << entry->data_offset() << ", " << entry->size()
             // flags
-            << ", 0}";
+            << ", 0";
+        if ((entry->flags() & RFS_GZIPPED) != 0) {
+            c->os<< " | RFS_GZIPPED";
+        } 
+        c->os<< "}";
     }
     return 0;
 }

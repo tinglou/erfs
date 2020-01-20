@@ -14,7 +14,7 @@ extern "C" {
 /// RFSEntry flags
 enum RfsEntryFlags {
     RFS_DIRECTORY       = 1,
-    RFS_GZIPPED         = 2,  // TODO
+    RFS_GZIPPED         = 2, 
 };
 
 /// a directory or file
