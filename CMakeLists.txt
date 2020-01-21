@@ -26,14 +26,14 @@ link_directories(
 #
 # Resource Filesystem Readonly
 #
-set(RFS_ROM "resource_fs")
+set(RFS_ROM "rfs_rt")
 set(RFS_ROM_FILES "src/resource_fs.c")
 add_library(${RFS_ROM} STATIC "${RFS_ROM_FILES}")
 
 #
 # generator 
 #
-set(RFS_APP "rfs_generator")
+set(RFS_APP "rfs_gen")
 set(RFS_APP_FILES 
     src/bin/main.cpp
     src/bin/rfs_generator.cpp
@@ -49,7 +49,7 @@ target_link_libraries(${RFS_APP} libz.a)
 function(gen_rfs_source sourcedir id target)
     add_custom_command(
         OUTPUT ${target}/rfs_${id}.c ${target}/rfs_${id}.h
-        COMMAND ${RFS_APP} --gzip ${sourcedir} ${id} ${target}
+        COMMAND ${RFS_APP} --gzip --rust ${sourcedir} ${id} ${target}
         COMMENT "Generating resourc_fs .c source file from: ${sourcedir}"
     )
 endfunction()

@@ -114,7 +114,7 @@ TEST(RFS, read_open_file) {
     result = rfs_open(fs, (const uint8_t *)"/bin/rfs_generator.h", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
-    EXPECT_EQ(flags, 0);  
+    EXPECT_EQ(flags, RFS_GZIPPED);  
 }
 
 

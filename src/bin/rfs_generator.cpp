@@ -7,8 +7,12 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <set>
 
-#define RFS_MAX_SIZE        (1024 * 1024 * 100)
+// #define RFS_MAX_SIZE                (1024 * 1024 * 100)
+
+// compress file when size > 512
+#define GZIP_FILE_SIZE_THRESHOLD    512
 
 namespace fs = std::filesystem;
 
@@ -87,6 +91,18 @@ static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& 
 static int generate_header (std::ostream& os, const std::string& id);
 static int generate_rust (std::ostream& os, const std::string& id);
 
+enum RfsGenTravelType {
+    RFSGEN_TRAVEL_DIR_ENTER,
+    RFSGEN_TRAVEL_DIR_LEAVE,
+    RFSGEN_TRAVEL_ENTRY,
+};
+typedef int (*rfsgen_visit) (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
+
+static int callback_data_entry_name(std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
+static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
+static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
+static int rfs_gzip_file(const char* source_path, const char* dest_path);
+
 ///
 /// generate RFS .c source file
 ///@param path the directory or file to be embedded
@@ -101,13 +117,11 @@ int generate_rfs(const char *path, const char *id, int options, const char *targ
     //
     fs::path source(path);
     if (!fs::exists(source) || !(fs::is_directory(source) || fs::is_regular_file(source))) {
-        std::cout << __FILE__ << ":" << __LINE__ << std::endl;
         return RFS_NOT_FOUND;
     }
     
     fs::path target(target_dir);
     if (!fs::exists(target) || !fs::is_directory(target)) {
-        std::cout << __FILE__ << ":" << __LINE__ << std::endl;
         return RFS_TARGET_NOT_EXIST;
     }
     
@@ -146,7 +160,7 @@ int generate_rfs(const char *path, const char *id, int options, const char *targ
         std::cout << "Generating header: " << rfsfile << std::endl;
         generate_header(ofs, id);
     }
-    {
+    if ((options & RFSGEN_RUST) != 0){
         // rust(.rs) file
         std::string name = std::string("rfs_") + std::string(id) + std::string(".rs");
         fs::path rfsfile = target / name;
@@ -188,13 +202,7 @@ static int build_tree(std::shared_ptr<RfsGenDirectory>& dir) {
     return result;
 }
 
-enum RfsGenTravelType {
-    RFSGEN_TRAVEL_DIR_ENTER,
-    RFSGEN_TRAVEL_DIR_LEAVE,
-    RFSGEN_TRAVEL_ENTRY,
-};
 
-typedef int (*rfsgen_visit) (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
 
 static int rfsgen_travel_tree(std::shared_ptr<RfsGenEntry>& entry, rfsgen_visit callback, void* ctx) {
     int result = 0;
@@ -234,9 +242,7 @@ static int rfsgen_travel_tree(std::shared_ptr<RfsGenEntry>& entry, rfsgen_visit 
     return result;
 }
 
-static int callback_data_entry_name(std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
-static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
-static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
+
 
 struct CodegenContext {
     // config
@@ -440,7 +446,7 @@ static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum
         gzname += ".gz";
         fs::path dest = fs::temp_directory_path() / gzname;
 
-        int ret = gzip_file(source.c_str(), dest.c_str());
+        int ret = rfs_gzip_file(source.c_str(), dest.c_str());
         if (ret == 0) {
             gzipped = true;
             pack_file = dest;
@@ -521,3 +527,91 @@ static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum R
     }
     return 0;
 }
+
+/// http://www.iana.org/assignments/media-types/media-types.xhtml
+static const std::set<std::string> gzip_blacklist = {
+    // compressed file
+    "arc",
+    "bz",
+    "bz2",
+    "epub",
+    "zip",
+    "jar",
+    "war",
+    "gz",
+    "tgz",
+    "rar",
+    "7z",
+    "apk",
+    
+    // media audio
+    "aac",
+    "flac",
+    "mp3",
+    "ogg",
+    "oga",
+    "weba",
+    
+    // media video
+    "avi",
+    "mpeg",
+    "webm",
+    "3gp",
+    "3g2",
+    "mp4",
+    "mkv",
+    
+    // media image
+    "bmp",
+    "jpg",
+    "jpeg",
+    "heic",
+    "ogv",
+    "ogx",
+    "png",
+    "tif",
+    "tiff",
+    "webp",
+    "gif"
+};
+
+
+///
+/// @return 0:success, -1:failed to open file to read; -2: failed to open file to write; -3: compress fail; -4: needn't compress
+///
+static int rfs_gzip_file(const char* source_path, const char* dest_path) {
+    int ret = 0;
+
+    fs::path source(source_path);
+    fs::path dest(dest_path);
+    int source_size = fs::file_size(source);
+
+    if (source_size < GZIP_FILE_SIZE_THRESHOLD) {
+        ret = RFS_GZIP_COMPRESS_RATIO;
+        return ret;
+    }
+
+    auto ext = source.extension().string();
+    if (ext.length() > 0) {
+        ext = ext.substr(1);
+    }
+
+    if (gzip_blacklist.find(ext) != gzip_blacklist.end()) {
+        ret = RFS_GZIP_COMPRESS_RATIO;
+        return ret;
+    } 
+
+    ret = gzip_file(source_path, dest_path);
+    if (ret != 0) {
+        return ret;
+    }
+    
+    int dest_size = fs::file_size(dest);
+    if (((float)dest_size) / ((float)source_size) > 0.8) {
+        ret = RFS_GZIP_COMPRESS_RATIO;
+    }
+
+    return ret;
+}
+
+

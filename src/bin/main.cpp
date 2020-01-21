@@ -5,7 +5,8 @@
 void usage(const char* prog) {
     std::cout << "Usage: " << prog << " [options] <src_dir> <id> <dest_dir>" << std::endl;
     std::cout << "Options:" << std::endl;
-    std::cout << "  --gzip      compress file if needed." << std::endl;    
+    std::cout << "  --gzip      compress file if needed." << std::endl;   
+    std::cout << "  --rust      generate rust binding codes." << std::endl; 
 }
 
 int main(int argc, char** argv) {
@@ -23,6 +24,8 @@ int main(int argc, char** argv) {
             // options
             if (strcmp("--gzip", arg) == 0) {
                 option |= RFSGEN_GZIPPED;
+            } else if (strcmp("--rust", arg) == 0) {
+                option |= RFSGEN_RUST;            
             } else {
                 std::cout << "Unknown option: " << arg << std::endl << std::endl;
                 usage(argv[0]);
