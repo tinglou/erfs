@@ -22,12 +22,12 @@ enum RfsGenStatusCode {
 };
 
 ///
-/// generate RFS .c source file
+/// generate RFS source file
 ///@param path the directory or file to be embedded
 ///@param id identity of the FS, format: [a-z][a-z_0-9]*
 ///@param option e.g. gzip text files
 ///@param target_dir target directory 
-int generate_rfs(const char *path, const char *id, int options, const char *target_dir);
+int rfs_generate(const char *path, const char *id, int options, const char *target_dir);
 
 
 #if defined(__cplusplus)

@@ -40,6 +40,6 @@ int main(int argc, char** argv) {
         usage(argv[0]);
         return 3;
     }
-    result = generate_rfs(real_args[0], real_args[1], option, real_args[2]);
+    result = rfs_generate(real_args[0], real_args[1], option, real_args[2]);
     return result;
 }
