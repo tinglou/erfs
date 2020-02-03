@@ -8,6 +8,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/tinglou/resource-fs"
 homepage = "https://github.com/tinglou/resource-fs"
+
 description = """
 A library/tool to embed all resource files needed into application.
 """
@@ -17,3 +18,4 @@ A library/tool to embed all resource files needed into application.
 [build-dependencies]
 cc = { version = "1.0.50", features = ["parallel"] }
 bindgen = "0.49.4"
+deflate = "0.8.2"

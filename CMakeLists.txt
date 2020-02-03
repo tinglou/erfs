@@ -53,7 +53,7 @@ function(gen_rfs_source sourcedir id target)
     )
 endfunction()
 
-gen_rfs_source("${CMAKE_CURRENT_SOURCE_DIR}/resource_fs/src" "rfsrc" "${CMAKE_CURRENT_BINARY_DIR}")
+gen_rfs_source("${CMAKE_CURRENT_SOURCE_DIR}/resource_fs" "rfsrc" "${CMAKE_CURRENT_BINARY_DIR}")
 
 
 #

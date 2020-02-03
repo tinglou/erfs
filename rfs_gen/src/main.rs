@@ -1,5 +1,7 @@
 use std::env;
 
+use rfs_gen::rfs_generate;
+
 fn usage () {
     let args: Vec<String> = env::args().collect();
     println!("Usage: {} [options] <src_dir> <id> <dest_dir>", args[0]);
@@ -13,6 +15,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 4  {
         usage();
+        return;
     }
 
     let mut real_args: Vec<String> = Vec::new();
@@ -38,6 +41,12 @@ fn main() {
         index = index + 1;
     }
 
+    if real_args.len() != 3 {
+        usage();
+        return;
+    }
+
     println!("{:?}, option: {}", real_args, option);
+    rfs_generate(&real_args[0], &real_args[1], option, &real_args[2]);
     
 }

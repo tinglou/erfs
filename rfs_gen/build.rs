@@ -3,7 +3,7 @@ extern crate cc;
 fn build_cpp_gen() {
     let src = [
         "src/rfs_generator.cpp",
-        "src/gzip_file.cpp",
+    //    "src/gzip_file.cpp",
     ];
     let mut builder = cc::Build::new();
     let build = builder

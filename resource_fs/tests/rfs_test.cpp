@@ -47,11 +47,11 @@ TEST(RFS, travel) {
 TEST(RFS, read_ok) {
     const uint8_t * buff;
     uint32_t size;
-    int result = rfs_read(fs, (const uint8_t *)"/resource_fs.h", &buff, &size);
+    int result = rfs_read(fs, (const uint8_t *)"/src/resource_fs.h", &buff, &size);
     EXPECT_EQ(result, RFS_OK);
 }
 
-TEST(RFS, read_fail_faile) {
+TEST(RFS, read_fail) {
     const uint8_t * buff;
     uint32_t size;
     int result;
@@ -96,25 +96,15 @@ TEST(RFS, read_open_file) {
     uint32_t flags;
     int result;
 
-    result = rfs_open(fs, (const uint8_t *)"/gen", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/src", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_DIRECTORY);  
 
-    result = rfs_open(fs, (const uint8_t *)"/gen/main.cpp", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/src/resource_fs.c", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_GZIPPED);    
-
-    result = rfs_open(fs, (const uint8_t *)"/gen/rfs_generator.cpp", &handle, &size);
-    EXPECT_EQ(result, RFS_OK);    
-    flags = rfs_entryflags(handle);
-    EXPECT_EQ(flags, RFS_GZIPPED);  
-
-    result = rfs_open(fs, (const uint8_t *)"/gen/rfs_generator.h", &handle, &size);
-    EXPECT_EQ(result, RFS_OK);    
-    flags = rfs_entryflags(handle);
-    EXPECT_EQ(flags, RFS_GZIPPED);  
 }
 
 
