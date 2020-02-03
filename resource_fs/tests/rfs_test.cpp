@@ -96,22 +96,22 @@ TEST(RFS, read_open_file) {
     uint32_t flags;
     int result;
 
-    result = rfs_open(fs, (const uint8_t *)"/bin", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/gen", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_DIRECTORY);  
 
-    result = rfs_open(fs, (const uint8_t *)"/bin/main.cpp", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/gen/main.cpp", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_GZIPPED);    
 
-    result = rfs_open(fs, (const uint8_t *)"/bin/rfs_generator.cpp", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/gen/rfs_generator.cpp", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_GZIPPED);  
 
-    result = rfs_open(fs, (const uint8_t *)"/bin/rfs_generator.h", &handle, &size);
+    result = rfs_open(fs, (const uint8_t *)"/gen/rfs_generator.h", &handle, &size);
     EXPECT_EQ(result, RFS_OK);    
     flags = rfs_entryflags(handle);
     EXPECT_EQ(flags, RFS_GZIPPED);  

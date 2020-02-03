@@ -12,7 +12,7 @@ find_package(GTest REQUIRED)
 
 
 include_directories(
-    src
+    resource_fs/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/thirdparties/src/zlib
 )
@@ -27,7 +27,7 @@ link_directories(
 # Resource Filesystem Readonly
 #
 set(RFS_ROM "rfs_rt")
-set(RFS_ROM_FILES "src/resource_fs.c")
+set(RFS_ROM_FILES "resource_fs/src/resource_fs.c")
 add_library(${RFS_ROM} STATIC "${RFS_ROM_FILES}")
 
 #
@@ -35,10 +35,9 @@ add_library(${RFS_ROM} STATIC "${RFS_ROM_FILES}")
 #
 set(RFS_APP "rfs_gen")
 set(RFS_APP_FILES 
-    src/bin/main.cpp
-    src/bin/rfs_generator.cpp
-    src/bin/gzip_file.cpp
-    # src/bin/zpipe.c
+    rfs_gen/src/main.cpp
+    rfs_gen/src/rfs_generator.cpp
+    rfs_gen/src/gzip_file.cpp
     )
 add_executable(${RFS_APP}  "${RFS_APP_FILES}")
 target_link_libraries(${RFS_APP} libz.a)
@@ -54,14 +53,14 @@ function(gen_rfs_source sourcedir id target)
     )
 endfunction()
 
-gen_rfs_source("${CMAKE_CURRENT_SOURCE_DIR}/src" "rfsrc" "${CMAKE_CURRENT_BINARY_DIR}")
+gen_rfs_source("${CMAKE_CURRENT_SOURCE_DIR}/resource_fs/src" "rfsrc" "${CMAKE_CURRENT_BINARY_DIR}")
 
 
 #
 # Unit test
 #
 set(RFS_UT "rfs_ut")
-set(RFS_UT_FILES tests/rfs_test.cpp ${CMAKE_CURRENT_BINARY_DIR}/rfs_rfsrc.c)
+set(RFS_UT_FILES resource_fs/tests/rfs_test.cpp ${CMAKE_CURRENT_BINARY_DIR}/rfs_rfsrc.c)
 add_executable(${RFS_UT} ${RFS_UT_FILES} ${RFS_ROM_FILES})
 #target_link_libraries(${RFS_UT}  GTest::GTest GTest::Main -lgcov)
 target_link_libraries(${RFS_UT}  GTest::GTest GTest::Main)

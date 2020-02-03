@@ -1,5 +1,4 @@
 #include "rfs_generator.h"
-#include "resource_fs.h"
 
 #include <filesystem>
 #include <fstream>
@@ -13,6 +12,17 @@
 
 // compress file when size > 512
 #define GZIP_FILE_SIZE_THRESHOLD    512
+
+
+/// ================== copy  from resource.h =========================
+///
+/// RFSEntry flags
+///
+enum RfsEntryFlags {
+    RFS_DIRECTORY       = 1,
+    RFS_GZIPPED         = 2, 
+};
+/// ================== copy  from resource.h =========================
 
 namespace fs = std::filesystem;
 

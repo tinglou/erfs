@@ -15,6 +15,12 @@ enum RfsGenOption {
 ///
 enum RfsGenStatusCode {
     RFS_GEN_OK                 = 0,
+    RFS_INVALID_INPUT           = -1,
+    RFS_NOT_FOUND               = -2,
+    RFS_NOT_FILE                = -3,
+    RFS_NOT_DIRECTORY           = -4,
+    RFS_OUTOF_BOUND             = -5,
+
     RFS_SOURCE_TOO_LARGE        = -100,
     RFS_TARGET_NOT_EXIST        = -101,
     RFS_INVALID_ID              = -102,
