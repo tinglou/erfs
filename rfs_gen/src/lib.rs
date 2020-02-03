@@ -1,3 +1,4 @@
+extern crate deflate;
 use std::ffi::CString;
 
 #[allow(dead_code)]

@@ -22,13 +22,8 @@ fn generate_rust_binding() {
     }
 }
 
+
 fn main() {
-        /*
-    pkg_config::Config::new()
-        .atleast_version("1.2")
-        .probe("z")
-        .unwrap();
-        */
     build_c_rt();
     generate_rust_binding();
 }

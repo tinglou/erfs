@@ -292,7 +292,7 @@ static int generate_header (std::ostream& os, const std::string& id) {
         << "#endif" << std::endl
         << std::endl;
 
-    os  << "const RfsRoot rfs_" << id << "();" << std::endl
+    os  << "RfsRoot rfs_" << id << "();" << std::endl
         << std::endl;
 
     os  << "#if defined(__cplusplus)" << std::endl
@@ -308,8 +308,16 @@ static int generate_rust (std::ostream& os, const std::string& id) {
     os  << "pub type RfsRoot = *const ::std::os::raw::c_void;" << std::endl
         << std::endl
         << "extern \"C\" {" << std::endl
-        << "  pub fn rfs_" << id << "() -> RfsRoot;" << std::endl
+        << "  fn rfs_" << id << "() -> RfsRoot;" << std::endl
         << "}" << std::endl
+        << std::endl
+
+        << "pub fn rfs_root() -> RfsRoot {" << std::endl
+        << "  unsafe {" << std::endl
+        << "    rfs_" << id << "()" << std::endl
+        << "  }" << std::endl
+        << "}" << std::endl
+        << std::endl
         ;
 
     return 0;
@@ -322,7 +330,7 @@ static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& 
         << std::endl
 
         << "static const RfsFileSystem rfs_" << id << "_;" << std::endl
-        << "const RfsRoot rfs_" << id << "(){" << std::endl
+        << "RfsRoot rfs_" << id << "(){" << std::endl
         << "  return (const RfsRoot)&rfs_" << id << "_;" << std::endl
         << "}" << std::endl
         << std::endl

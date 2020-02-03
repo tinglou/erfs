@@ -8,12 +8,11 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/tinglou/resource-fs"
 homepage = "https://github.com/tinglou/resource-fs"
-description = """
-A library/tool to embed all resource files needed into application.
-"""
+description = "Embedded resource file system: runtime api the access embedded resources."
 
 [dependencies]
 
 [build-dependencies]
 cc = { version = "1.0.50", features = ["parallel"] }
 bindgen = "0.49.4"
+

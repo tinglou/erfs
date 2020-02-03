@@ -3,4 +3,5 @@
 members = [
     "resource_fs",
     "rfs_gen",
+    "rfs_example",
 ]
