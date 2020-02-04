@@ -8,10 +8,10 @@
 ///@param path the file name to read
 ///@param out pointer to the content
 ///@param size file size
-///@return 0 for success; other for notfound
-int rfs_read(const RfsRoot fs, const uint8_t *path, const uint8_t **out, uint32_t *size) {
+///@return RFS_OK for success; other for notfound
+int rfs_read(const RfsRoot fs, const uint8_t *path, uint32_t path_len, const uint8_t **out, uint32_t *size) {
     RfsHandle handle;
-    int result = rfs_open (fs, path, &handle, size);
+    int result = rfs_open (fs, path, path_len, &handle, size);
     if (result != 0) {
         return result;
     }
@@ -25,7 +25,7 @@ int rfs_read(const RfsRoot fs, const uint8_t *path, const uint8_t **out, uint32_
 
 
 static int strcmp_withlength (const uint8_t *s1, int l1, const uint8_t *s2, int l2) {
-    int minlen = (l1 > l2)? l1 : l2;
+    int minlen = (l1 < l2)? l1 : l2;
     for(int i = 0; i < minlen; i++, s1++, s2++){
         if(*s1 < *s2) {
             return -1;
@@ -41,7 +41,7 @@ static int strcmp_withlength (const uint8_t *s1, int l1, const uint8_t *s2, int 
     return 0;
 }
 
-static int rfs_find(const RfsRoot fs, const RfsHandle handle, const uint8_t *name, int len, RfsHandle *out) {
+static int rfs_binarysearch(const RfsRoot fs, const RfsHandle handle, const uint8_t *name, int len, RfsHandle *out) {
     RfsHandle A = fs->entries + handle->data_offset;
     int L = 0;
     int R = (handle->data_size - 1);
@@ -78,21 +78,23 @@ static int rfs_find(const RfsRoot fs, const RfsHandle handle, const uint8_t *nam
 ///@param path the file name to read
 ///@param out handle
 ///@param size file size or entries in the directory
-///@return 0 for success; other for notfound
-int rfs_open(const RfsRoot fs, const uint8_t *path, RfsHandle *out, uint32_t *size) {
+///@return RFS_OK for success; other for notfound
+int rfs_open(const RfsRoot fs, const uint8_t *path, uint32_t path_len, RfsHandle *out, uint32_t *size) {
     CHECK_NULL(fs);
     CHECK_NULL(path);
     CHECK_NULL(out);
     CHECK_NULL(size);
+    const uint8_t *path_end = path + path_len;
+
     // if first character is '/', ignore
     const uint8_t *pos = path;
-    if (*pos == '/') {
+    if (path_len > 0 && *pos == '/') {
         pos++;
     }
 
     // open root dir
     RfsHandle dir = fs->entries;
-    if(*pos == 0){
+    if(pos == path_end){
         *out = dir;
         *size = dir->data_size;
         return RFS_OK;
@@ -102,15 +104,15 @@ int rfs_open(const RfsRoot fs, const uint8_t *path, RfsHandle *out, uint32_t *si
     RfsHandle entry = 0;
     const uint8_t *start = pos;
     int len;
-    while (*pos != 0) {
-        while(*pos != '/' && *pos != 0) pos++;
+    while (pos != path_end) {
+        while(*pos != '/' && pos != path_end) pos++;
         len = pos - start;
 
-        result = rfs_find(fs, dir, start, len, &entry);
+        result = rfs_binarysearch(fs, dir, start, len, &entry);
         if (result != RFS_OK) {
             return result;
         }
-        if (*pos == 0) {
+        if (pos == path_end) {
             // path end
             break;
         }
@@ -131,9 +133,10 @@ int rfs_open(const RfsRoot fs, const uint8_t *path, RfsHandle *out, uint32_t *si
 /// get flags of an entry (directry or file)
 ///@param entry entry (directry or file)
 ///@return flags
-uint32_t rfs_entryflags(const RfsHandle handle) {
+uint32_t rfs_entryflags(const RfsHandle handle, uint32_t *flags) {
     CHECK_NULL(handle);
-    return handle->flags;
+    *flags = handle->flags;
+    return RFS_OK;
 }
 
 /// get name of an entry (directry or file)
@@ -141,7 +144,7 @@ uint32_t rfs_entryflags(const RfsHandle handle) {
 ///@param handle entry (directry or file)
 ///@param out pointer to the content
 ///@param size file size
-///@return 0 for success; other for notfound
+///@return RFS_OK for success; other for notfound
 int rfs_entryname(const RfsRoot fs, const RfsHandle handle, const uint8_t **out, uint32_t *size) {
     CHECK_NULL(fs);
     CHECK_NULL(handle);
@@ -157,7 +160,7 @@ int rfs_entryname(const RfsRoot fs, const RfsHandle handle, const uint8_t **out,
 ///@param handle the file name
 ///@param out pointer to the content
 ///@param size file size
-///@return 0 for success; other for notfound
+///@return RFS_OK for success; other for notfound
 int rfs_readfile(const RfsRoot fs, const RfsHandle handle, const uint8_t **out, uint32_t *size) {
     CHECK_NULL(fs);
     CHECK_NULL(handle);
@@ -176,7 +179,7 @@ int rfs_readfile(const RfsRoot fs, const RfsHandle handle, const uint8_t **out, 
 ///@param handle directory to read
 ///@param index entry index
 ///@param out out entry
-///@return 0 for success; other for notfound
+///@return RFS_OK for success; other for notfound
 int rfs_readdir(const RfsRoot fs, const RfsHandle handle, uint32_t index, RfsHandle *out){
     CHECK_NULL(fs);
     CHECK_NULL(handle);
@@ -227,7 +230,7 @@ int rfs_travel_itr(const RfsRoot fs, RfsHandle handle, rfs_visit func, void* ctx
 ///@param fs the file system
 ///@param func callback function
 ///@param ctx context
-///@return 0 for success; other for notfound
+///@return RFS_OK for success; other for notfound
 int rfs_travel(const RfsRoot fs, rfs_visit func, void* ctx) {
     CHECK_NULL(fs);
     CHECK_NULL(func);

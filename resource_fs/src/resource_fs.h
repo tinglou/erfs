@@ -75,23 +75,26 @@ enum RfsStatusCode {
 /// read a regular file
 ///@param fs the file system
 ///@param path the file name to read
+///@param path_len length of path
 ///@param out pointer to the content
 ///@param size file size
 ///@return 0 for success; other for notfound
-int rfs_read(const RfsRoot fs, const uint8_t *path, const uint8_t **out, uint32_t *size);
+int rfs_read(const RfsRoot fs, const uint8_t *path, uint32_t path_len, const uint8_t **out, uint32_t *size);
 
 /// open a FS entry
 ///@param fs the file system
 ///@param path the file name to read
+///@param path_len length of path
 ///@param out handle
 ///@param size file size or entries in the directory
 ///@return 0 for success; other for notfound
-int rfs_open(const RfsRoot fs, const uint8_t *path, RfsHandle *out, uint32_t *size);
+int rfs_open(const RfsRoot fs, const uint8_t *path, uint32_t path_len, RfsHandle *out, uint32_t *size);
 
 /// get flags of an entry (directry or file)
 ///@param entry entry (directry or file)
+///@param flags [out] flags
 ///@return flags
-uint32_t rfs_entryflags(const RfsHandle entry);
+uint32_t rfs_entryflags(const RfsHandle entry, uint32_t *flags);
 
 /// get name of an entry (directry or file)
 ///@param fs the file system

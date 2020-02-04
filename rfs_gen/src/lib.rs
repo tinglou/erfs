@@ -8,7 +8,7 @@ mod rfs_gen_binding;
 
 mod gzip_file;
 
-pub fn rfs_generate(path: &String, id: &String, options: i32, target_dir: &String) -> i32 {
+pub fn rfs_generate(path: &str, id: &str, options: i32, target_dir: &str) -> i32 {
     let cpath = CString::new(path.as_bytes()).expect("CString::new failed");
     let cid = CString::new(id.as_bytes()).expect("CString::new failed");
     let ctarget = CString::new(target_dir.as_bytes()).expect("CString::new failed");

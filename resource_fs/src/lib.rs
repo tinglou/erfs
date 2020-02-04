@@ -6,22 +6,50 @@ mod rfs_binding;
 use rfs_binding::RfsRoot;
 use rfs_binding::RfsHandle;
 use rfs_binding::rfs_visit;
+use std::slice;
 
-pub fn rfs_read(fs: RfsRoot, path: *const u8, out: *mut *const u8, size: *mut u32) -> i32 {
+pub fn read(fs: RfsRoot, path: &str) -> Result<&[u8], i32> {
+    let mut buf = 0 as *const u8;
+    let mut size :u32 = 0;
+
+    let pbuf = &mut buf as *mut *const u8;
+    let psize = &mut size as *mut u32;
+
+    let ret :i32;
     unsafe { 
-        rfs_binding::rfs_read(fs, path, out, size) 
+        ret = rfs_binding::rfs_read(fs, path.as_ptr(), path.len() as u32, pbuf, psize);
     }
+    if ret == 0 {
+        unsafe {
+            Ok(slice::from_raw_parts(buf, size as usize))
+        }
+    } else {
+        Err(ret)
+    }  
 }
 
-pub fn rfs_open(fs: RfsRoot, path: *const u8, out: *mut RfsHandle, size: *mut u32) -> i32 {
+pub fn open(fs: RfsRoot, path: &str) -> Result<(RfsHandle, u32), i32> {
+    let mut handle: RfsHandle = 0 as RfsHandle;
+    let mut size :u32 = 0;
+
+    let phandle = &mut handle as *mut RfsHandle;
+    let psize = &mut size as *mut u32;
+
+    let ret :i32;
     unsafe { 
-        rfs_binding::rfs_open(fs, path, out, size) 
+        ret = rfs_binding::rfs_open(fs, path.as_ptr(), path.len() as u32, phandle, psize);
     }
+    if ret == 0 {
+        Ok((handle, size as u32))
+    } else {
+        Err(ret)
+    }  
 }
 
-pub fn rfs_entryflags(entry: RfsHandle) -> u32 {
+
+pub fn rfs_entryflags(entry: RfsHandle, flags: *mut u32) -> u32 {
     unsafe { 
-        rfs_binding::rfs_entryflags(entry) 
+        rfs_binding::rfs_entryflags(entry, flags) 
     }
 }
 

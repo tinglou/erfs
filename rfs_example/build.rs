@@ -4,7 +4,7 @@ extern crate cc;
 fn generate_rfs_ut() {
     use rfs_gen::rfs_generate;
     {
-        rfs_generate(&String::from("../rfs_gen"), &String::from("gensrc"), 6, &String::from("src"));
+        rfs_generate("../resource_fs/src", "gensrc", 6, "src");
     }
 }
 
