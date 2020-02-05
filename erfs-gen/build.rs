@@ -2,7 +2,7 @@ extern crate cc;
 
 fn build_cpp_gen() {
     let src = [
-        "src/rfs_generator.cpp",
+        "src/erfs_generator.cpp",
     //    "src/gzip_file.cpp",
     ];
     let mut builder = cc::Build::new();
@@ -19,9 +19,9 @@ fn generate_rust_binding() {
     use bindgen::builder;
     {
         // Configure and generate bindings.
-        let bindings = builder().header("src/rfs_generator.h").generate().unwrap();
+        let bindings = builder().header("src/erfs_generator.h").generate().unwrap();
         // Write the generated bindings to an output file.
-        bindings.write_to_file("src/rfs_gen_binding.rs").unwrap();
+        bindings.write_to_file("src/erfs_gen_binding.rs").unwrap();
     }
 }
 

@@ -8,11 +8,11 @@ extern "C" {
 ///
 ///
 enum RfsGzipStatusCode {
-    RFS_GZIP_OK                 = 0,
-    RFS_GZIP_SRC_NOT_FOUND      = -1,
-    RFS_GZIP_DEST_NOT_FOUND     = -2,
-    RFS_GZIP_COMPRESS_FAIL      = -3,
-    RFS_GZIP_COMPRESS_RATIO     = -4,
+    ERFS_GZIP_OK                 = 0,
+    ERFS_GZIP_SRC_NOT_FOUND      = -1,
+    ERFS_GZIP_DEST_NOT_FOUND     = -2,
+    ERFS_GZIP_COMPRESS_FAIL      = -3,
+    ERFS_GZIP_COMPRESS_RATIO     = -4,
 };
 
 ///

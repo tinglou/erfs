@@ -1,4 +1,4 @@
-#include "rfs_generator.h"
+#include "erfs_generator.h"
 #include <iostream>
 #include <string>
 
@@ -23,9 +23,9 @@ int main(int argc, char** argv) {
         if(*arg == '-') {
             // options
             if (strcmp("--gzip", arg) == 0) {
-                option |= RFSGEN_GZIPPED;
+                option |= ERFS_GEN_GZIPPED;
             } else if (strcmp("--rust", arg) == 0) {
-                option |= RFSGEN_RUST;            
+                option |= ERFS_GEN_RUST;            
             } else {
                 std::cout << "Unknown option: " << arg << std::endl << std::endl;
                 usage(argv[0]);
@@ -40,6 +40,6 @@ int main(int argc, char** argv) {
         usage(argv[0]);
         return 3;
     }
-    result = rfs_generate(real_args[0], real_args[1], option, real_args[2]);
+    result = erfs_generate(real_args[0], real_args[1], option, real_args[2]);
     return result;
 }

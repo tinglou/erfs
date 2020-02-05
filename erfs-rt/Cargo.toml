@@ -1,5 +1,5 @@
 [package]
-name = "resource-fs"
+name = "erfs-rt"
 build = "build.rs"
 version = "0.1.0"
 authors = ["Lou, Ting <ting.lou@gmail.com>"]

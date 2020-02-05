@@ -12,7 +12,7 @@ int gzip_file(const char* source_path, const char* dest_path) {
 
     gzFile file = gzopen(dest_path, "wb9");
     if (file == NULL) {
-        ret = RFS_GZIP_DEST_NOT_FOUND;
+        ret = ERFS_GZIP_DEST_NOT_FOUND;
         return ret;
     }
     unsigned char buf[CHUNK];
@@ -25,12 +25,12 @@ int gzip_file(const char* source_path, const char* dest_path) {
             break;
         }
         if (gzwrite(file, buf, (unsigned)len) != len) {
-            ret = RFS_GZIP_COMPRESS_FAIL;
+            ret = ERFS_GZIP_COMPRESS_FAIL;
             break;
         }
     } 
     if (gzclose(file) != Z_OK) {
-        ret = RFS_GZIP_COMPRESS_FAIL;
+        ret = ERFS_GZIP_COMPRESS_FAIL;
         return ret;
     }
     return ret;

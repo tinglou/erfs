@@ -1,4 +1,4 @@
-#include "rfs_generator.h"
+#include "erfs_generator.h"
 
 #include <filesystem>
 #include <fstream>
@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <set>
 
-// #define RFS_MAX_SIZE                (1024 * 1024 * 100)
+#define ERFS_MAX_SIZE                (1024 * 1024 * 100)
 
 // compress file when size > 512
 #define GZIP_FILE_SIZE_THRESHOLD    512
@@ -16,11 +16,11 @@
 
 /// ================== copy  from resource.h =========================
 ///
-/// RFSEntry flags
+/// ERFSEntry flags
 ///
-enum RfsEntryFlags {
-    RFS_DIRECTORY       = 1,
-    RFS_GZIPPED         = 2, 
+enum ErfsEntryFlags {
+    ERFS_DIRECTORY       = 1,
+    ERFS_GZIPPED         = 2, 
 };
 /// ================== copy  from resource.h =========================
 
@@ -103,9 +103,9 @@ static int generate_header (std::ostream& os, const std::string& id);
 static int generate_rust (std::ostream& os, const std::string& id);
 
 enum RfsGenTravelType {
-    RFSGEN_TRAVEL_DIR_ENTER,
-    RFSGEN_TRAVEL_DIR_LEAVE,
-    RFSGEN_TRAVEL_ENTRY,
+    ERFS_GEN_TRAVEL_DIR_ENTER,
+    ERFS_GEN_TRAVEL_DIR_LEAVE,
+    ERFS_GEN_TRAVEL_ENTRY,
 };
 typedef int (*rfsgen_visit) (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx);
 
@@ -115,12 +115,12 @@ static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum R
 static int rfs_gzip_file(const char* source_path, const char* dest_path);
 
 ///
-/// generate RFS .c source file
+/// generate ERFS .c source file
 ///@param path the directory or file to be embedded
 ///@param id identity of the FS, format: [a-z][a-z_0-9]*
 ///@param option e.g. gzip text files
 ///@param target_dir target directory 
-int rfs_generate(const char *path, const char *id, int options, const char *target_dir) {
+int erfs_generate(const char *path, const char *id, int options, const char *target_dir) {
     int result = 0;
 
     //
@@ -128,12 +128,12 @@ int rfs_generate(const char *path, const char *id, int options, const char *targ
     //
     fs::path source(path);
     if (!fs::exists(source) || !(fs::is_directory(source) || fs::is_regular_file(source))) {
-        return RFS_NOT_FOUND;
+        return ERFS_NOT_FOUND;
     }
     
     fs::path target(target_dir);
     if (!fs::exists(target) || !fs::is_directory(target)) {
-        return RFS_TARGET_NOT_EXIST;
+        return ERFS_TARGET_NOT_EXIST;
     }
     
     //
@@ -153,11 +153,11 @@ int rfs_generate(const char *path, const char *id, int options, const char *targ
     }
 
     //
-    // phase 2: generate the RFS source file
+    // phase 2: generate the ERFS source file
     //
     {
         // .c source file
-        std::string name = std::string("rfs_") + std::string(id) + std::string(".c");
+        std::string name = std::string("erfs_") + std::string(id) + std::string(".c");
         fs::path rfsfile = target / name;
         std::ofstream ofs(rfsfile);
         std::cout << "Packaging: " << source << " to " << rfsfile << std::endl;
@@ -165,15 +165,15 @@ int rfs_generate(const char *path, const char *id, int options, const char *targ
     }
     {
         // .h header file
-        std::string name = std::string("rfs_") + std::string(id) + std::string(".h");
+        std::string name = std::string("erfs_") + std::string(id) + std::string(".h");
         fs::path rfsfile = target / name;
         std::ofstream ofs(rfsfile);
         std::cout << "Generating header: " << rfsfile << std::endl;
         generate_header(ofs, id);
     }
-    if ((options & RFSGEN_RUST) != 0){
+    if ((options & ERFS_GEN_RUST) != 0){
         // rust(.rs) file
-        std::string name = std::string("rfs_") + std::string(id) + std::string(".rs");
+        std::string name = std::string("erfs_") + std::string(id) + std::string(".rs");
         fs::path rfsfile = target / name;
         std::ofstream ofs(rfsfile);
         std::cout << "Generating Ruet: " << rfsfile << std::endl;
@@ -219,7 +219,7 @@ static int rfsgen_travel_tree(std::shared_ptr<RfsGenEntry>& entry, rfsgen_visit 
     int result = 0;
 
     if (entry->is_directory()) {
-        result = (*callback)(entry, RFSGEN_TRAVEL_DIR_ENTER, ctx);
+        result = (*callback)(entry, ERFS_GEN_TRAVEL_DIR_ENTER, ctx);
         if (result) {
             return result;
         }
@@ -228,7 +228,7 @@ static int rfsgen_travel_tree(std::shared_ptr<RfsGenEntry>& entry, rfsgen_visit 
         std::shared_ptr<RfsGenDirectory> dir = std::dynamic_pointer_cast<RfsGenDirectory> (entry);
         // pass 1: all entries
         for (auto& en: dir->entries()) {
-            result = (*callback)(en, RFSGEN_TRAVEL_ENTRY, ctx);
+            result = (*callback)(en, ERFS_GEN_TRAVEL_ENTRY, ctx);
             if (result) {
                 return result;
             }
@@ -243,7 +243,7 @@ static int rfsgen_travel_tree(std::shared_ptr<RfsGenEntry>& entry, rfsgen_visit 
             }
         }
 
-        result = (*callback)(entry, RFSGEN_TRAVEL_DIR_LEAVE, ctx);
+        result = (*callback)(entry, ERFS_GEN_TRAVEL_DIR_LEAVE, ctx);
         if (result) {
             return result;
         }
@@ -280,11 +280,11 @@ static int generate_header (std::ostream& os, const std::string& id) {
     print_license(os);
     os  << "#pragma once" << std::endl
         << std::endl
-        << "#if defined(__RFS_IMPL__)" << std::endl
+        << "#if defined(__ERFS_IMPL__)" << std::endl
         << "#include \"resource_fs.h\"" << std::endl
-        << "#else // defined(__RFS_IMPL__)" << std::endl
-        << "typedef const void* RfsRoot;" << std::endl
-        << "#endif // defined(__RFS_IMPL__)" << std::endl
+        << "#else // defined(__ERFS_IMPL__)" << std::endl
+        << "typedef const void* ErfsRoot;" << std::endl
+        << "#endif // defined(__ERFS_IMPL__)" << std::endl
         << std::endl;
 
     os  << "#if defined(__cplusplus)" << std::endl
@@ -292,7 +292,7 @@ static int generate_header (std::ostream& os, const std::string& id) {
         << "#endif" << std::endl
         << std::endl;
 
-    os  << "RfsRoot rfs_" << id << "();" << std::endl
+    os  << "ErfsRoot rfs_" << id << "();" << std::endl
         << std::endl;
 
     os  << "#if defined(__cplusplus)" << std::endl
@@ -305,14 +305,14 @@ static int generate_header (std::ostream& os, const std::string& id) {
 
 static int generate_rust (std::ostream& os, const std::string& id) {
     print_license(os);
-    os  << "pub type RfsRoot = *const ::std::os::raw::c_void;" << std::endl
+    os  << "pub type ErfsRoot = *const ::std::os::raw::c_void;" << std::endl
         << std::endl
         << "extern \"C\" {" << std::endl
-        << "  fn rfs_" << id << "() -> RfsRoot;" << std::endl
+        << "  fn rfs_" << id << "() -> ErfsRoot;" << std::endl
         << "}" << std::endl
         << std::endl
 
-        << "pub fn rfs_root() -> RfsRoot {" << std::endl
+        << "pub fn rfs_root() -> ErfsRoot {" << std::endl
         << "  unsafe {" << std::endl
         << "    rfs_" << id << "()" << std::endl
         << "  }" << std::endl
@@ -325,17 +325,17 @@ static int generate_rust (std::ostream& os, const std::string& id) {
 
 static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& dir, const std::string& id, int options) {
     print_license(os);
-    os  << "#define  __RFS_IMPL__" << std::endl
-        << "#include \"rfs_" << id << ".h\"" << std::endl
+    os  << "#define  __ERFS_IMPL__" << std::endl
+        << "#include \"erfs_" << id << ".h\"" << std::endl
         << std::endl
 
-        << "static const RfsFileSystem rfs_" << id << "_;" << std::endl
-        << "RfsRoot rfs_" << id << "(){" << std::endl
-        << "  return (const RfsRoot)&rfs_" << id << "_;" << std::endl
+        << "static const ErfsFileSystem rfs_" << id << "_;" << std::endl
+        << "ErfsRoot rfs_" << id << "(){" << std::endl
+        << "  return (const ErfsRoot)&rfs_" << id << "_;" << std::endl
         << "}" << std::endl
         << std::endl
         
-        << "static const RfsFileSystem rfs_" << id << "_ = {" << std::endl;
+        << "static const ErfsFileSystem rfs_" << id << "_ = {" << std::endl;
 
 
     // 
@@ -344,11 +344,11 @@ static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& 
     // 2. file contents
     //
     os << "  .data = (uint8_t *)" << std::endl;
-    CodegenContext ctx = {os, (options & RFSGEN_GZIPPED) != 0, 0, 0, 0, true};
+    CodegenContext ctx = {os, (options & ERFS_GEN_GZIPPED) != 0, 0, 0, 0, true};
     std::shared_ptr<RfsGenEntry> entry = std::dynamic_pointer_cast<RfsGenEntry> (dir);
     
     os << "  // entry names" << std::endl;
-    callback_data_entry_name(entry, RFSGEN_TRAVEL_ENTRY, &ctx);
+    callback_data_entry_name(entry, ERFS_GEN_TRAVEL_ENTRY, &ctx);
     rfsgen_travel_tree(entry, callback_data_entry_name, &ctx);
 
     os << "  // file contents" << std::endl;
@@ -374,8 +374,8 @@ static int generate_source (std::ostream& os, std::shared_ptr<RfsGenDirectory>& 
     //
     os  << "," << std::endl;
     os << "  // directory tree: {name_offset, name_length, data_offset, data_size, flags}" << std::endl;
-    os << "  .entries = (RfsEntry[]){" << std::endl;
-    callback_directory_entry(entry, RFSGEN_TRAVEL_ENTRY, &ctx);
+    os << "  .entries = (ErfsEntry[]){" << std::endl;
+    callback_directory_entry(entry, ERFS_GEN_TRAVEL_ENTRY, &ctx);
     rfsgen_travel_tree(entry, callback_directory_entry, &ctx);
     os << std::endl << "  }";
 
@@ -430,7 +430,7 @@ static void output_line(std::ostream& os, const uint8_t* buf, int len, CodegenCo
 }
 
 static int callback_data_entry_name(std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx) {
-    if (RFSGEN_TRAVEL_ENTRY == type) {
+    if (ERFS_GEN_TRAVEL_ENTRY == type) {
         CodegenContext* c = reinterpret_cast<CodegenContext*>(ctx);
         entry->ordinal(c->ordinal);
         entry->name_offset(c->offset);
@@ -448,7 +448,7 @@ static int callback_data_entry_name(std::shared_ptr<RfsGenEntry>& entry, enum Rf
 
 #include "gzip_file.h"
 static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx) {
-    if (RFSGEN_TRAVEL_ENTRY != type || entry->is_directory()) {
+    if (ERFS_GEN_TRAVEL_ENTRY != type || entry->is_directory()) {
         return 0;
     }
 
@@ -469,7 +469,7 @@ static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum
         if (ret == 0) {
             gzipped = true;
             pack_file = dest;
-            entry->flags(RFS_GZIPPED);
+            entry->flags(ERFS_GZIPPED);
         } else {
             pack_file = source;
         }
@@ -504,7 +504,7 @@ static int callback_data_file_content (std::shared_ptr<RfsGenEntry>& entry, enum
 }
 
 static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum RfsGenTravelType type, void* ctx) {
-    if (RFSGEN_TRAVEL_ENTRY != type) {
+    if (ERFS_GEN_TRAVEL_ENTRY != type) {
         return 0;
     }
 
@@ -528,7 +528,7 @@ static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum R
             c->os << ", 0, 0";
         }
         // FLAGS
-        c->os  << ", RFS_DIRECTORY";
+        c->os  << ", ERFS_DIRECTORY";
         c->os  << "}";
     } else {
         c->os  << "    // [" << entry->ordinal() << "]: " << entry->path() << std::endl
@@ -539,8 +539,8 @@ static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum R
             << ", " << entry->data_offset() << ", " << entry->size()
             // flags
             << ", 0";
-        if ((entry->flags() & RFS_GZIPPED) != 0) {
-            c->os<< " | RFS_GZIPPED";
+        if ((entry->flags() & ERFS_GZIPPED) != 0) {
+            c->os<< " | ERFS_GZIPPED";
         } 
         c->os<< "}";
     }
@@ -606,7 +606,7 @@ static int rfs_gzip_file(const char* source_path, const char* dest_path) {
     int source_size = fs::file_size(source);
 
     if (source_size < GZIP_FILE_SIZE_THRESHOLD) {
-        ret = RFS_GZIP_COMPRESS_RATIO;
+        ret = ERFS_GZIP_COMPRESS_RATIO;
         return ret;
     }
 
@@ -617,7 +617,7 @@ static int rfs_gzip_file(const char* source_path, const char* dest_path) {
     }
 
     if (gzip_blacklist.find(ext) != gzip_blacklist.end()) {
-        ret = RFS_GZIP_COMPRESS_RATIO;
+        ret = ERFS_GZIP_COMPRESS_RATIO;
         return ret;
     } 
 
@@ -628,7 +628,7 @@ static int rfs_gzip_file(const char* source_path, const char* dest_path) {
     
     int dest_size = fs::file_size(dest);
     if (((float)dest_size) / ((float)source_size) > 0.8) {
-        ret = RFS_GZIP_COMPRESS_RATIO;
+        ret = ERFS_GZIP_COMPRESS_RATIO;
         fs::remove(dest);
     }
 

@@ -9,7 +9,7 @@ fn build_c_rt() {
         .files(src.iter())
         .include("src")
         ;
-    build.compile("rfs_rt");  
+    build.compile("erfs_c_rt");  
 }
 
 fn generate_rust_binding() {
@@ -18,7 +18,7 @@ fn generate_rust_binding() {
         // Configure and generate bindings.
         let bindings = builder().header("src/resource_fs.h").generate().unwrap();
         // Write the generated bindings to an output file.
-        bindings.write_to_file("src/rfs_binding.rs").unwrap();
+        bindings.write_to_file("src/erfs_binding.rs").unwrap();
     }
 }
 

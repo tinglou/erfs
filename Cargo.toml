@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "resource_fs",
-    "rfs_gen",
-    "rfs_example",
+    "erfs-rt",
+    "erfs-gen",
+    "erfs-example",
 ]

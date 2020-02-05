@@ -2,28 +2,28 @@
 extern crate cc;
 
 fn generate_rfs_ut() {
-    use rfs_gen::rfs_generate;
+    use erfs_gen::erfs_generate;
     {
-        rfs_generate("../resource_fs/src", "gensrc", 6, "src");
+        erfs_generate("../erfs-rt/src", "gensrc", 6, "src");
     }
 }
 
 fn compile_rfs_source() {
     let src = [
-        "src/rfs_gensrc.c",
+        "src/erfs_gensrc.c",
     ];
     let mut builder = cc::Build::new();
     let build = builder
         .files(src.iter())
         .include("src")
-        .include("../resource_fs/src")
+        .include("../erfs-rt/src")
         ;
     build.compile("rfs_gensrc");  
 }
 
 fn main() {
-    // generate RFS source files
+    // generate ERFS source files
     generate_rfs_ut();
-    // compile RFS c source files
+    // compile ERFS c source files
     compile_rfs_source();
 }

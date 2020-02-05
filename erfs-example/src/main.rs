@@ -1,7 +1,7 @@
 
-extern crate resource_fs;
+extern crate erfs_rt;
 
-pub mod rfs_gensrc;
+pub mod erfs_gensrc;
 
 
 fn main() {
@@ -12,11 +12,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use resource_fs::open;
+    use erfs_rt::open;
 
     #[test]
     fn test_openfile() {
-        let fs = rfs_gensrc::rfs_root();
+        let fs = erfs_gensrc::rfs_root();
 
         let (_handle, size) = open(fs, "/lib.rs").expect("open error");
 

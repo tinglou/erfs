@@ -1,9 +1,6 @@
 #pragma once
 
-#if !defined(__RESOURCE_FS_H__)
-#define __RESOURCE_FS_H__
-
-#if defined(__RFS_IMPL__)
+#if defined(__ERFS_IMPL__)
 #include <stdint.h>
 #if defined(__cplusplus)
 extern "C" {
@@ -18,58 +15,58 @@ typedef struct  {
     uint32_t data_offset;
     uint32_t data_size;
     uint32_t flags;
-} RfsEntry;
+} ErfsEntry;
 
-typedef const RfsEntry* RfsHandle;
+typedef const ErfsEntry* ErfsHandle;
 
 /// the whole resource filesystem
 typedef struct {
     // all entries including directories and files
     uint32_t entry_count;
-    RfsEntry *entries;
+    ErfsEntry *entries;
 
     // buffer to hold all names and contents
     uint32_t data_size;
     uint8_t  *data;
-} RfsFileSystem;
+} ErfsFileSystem;
 
-typedef const RfsFileSystem * RfsRoot;
+typedef const ErfsFileSystem * ErfsRoot;
 #pragma pack()
 
 #if defined(__cplusplus)
 }
 #endif
 
-#else // defined(RFS_IMPL)
+#else // defined(ERFS_IMPL)
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
 
-typedef const void* RfsRoot;
-typedef const void* RfsHandle;
-#endif // defined(RFS_IMPL)
+typedef const void* ErfsRoot;
+typedef const void* ErfsHandle;
+#endif // defined(ERFS_IMPL)
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
 ///
-/// RFSEntry flags
+/// ERFSEntry flags
 ///
-enum RfsEntryFlags {
-    RFS_DIRECTORY       = 1,
-    RFS_GZIPPED         = 2, 
+enum ErfsEntryFlags {
+    ERFS_DIRECTORY       = 1,
+    ERFS_GZIPPED         = 2, 
 };
 
 ///
 /// return code of access api
 ///
-enum RfsStatusCode {
-    RFS_OK                      = 0,
-    RFS_INVALID_INPUT           = -1,
-    RFS_NOT_FOUND               = -2,
-    RFS_NOT_FILE                = -3,
-    RFS_NOT_DIRECTORY           = -4,
-    RFS_OUTOF_BOUND             = -5,
+enum ErfsStatusCode {
+    ERFS_OK                      = 0,
+    ERFS_INVALID_INPUT           = -1,
+    ERFS_NOT_FOUND               = -2,
+    ERFS_NOT_FILE                = -3,
+    ERFS_NOT_DIRECTORY           = -4,
+    ERFS_OUTOF_BOUND             = -5,
 };
 
 /// read a regular file
@@ -79,7 +76,7 @@ enum RfsStatusCode {
 ///@param out pointer to the content
 ///@param size file size
 ///@return 0 for success; other for notfound
-int rfs_read(const RfsRoot fs, const uint8_t *path, uint32_t path_len, const uint8_t **out, uint32_t *size);
+int erfs_read(const ErfsRoot fs, const uint8_t *path, uint32_t path_len, const uint8_t **out, uint32_t *size);
 
 /// open a FS entry
 ///@param fs the file system
@@ -88,13 +85,13 @@ int rfs_read(const RfsRoot fs, const uint8_t *path, uint32_t path_len, const uin
 ///@param out handle
 ///@param size file size or entries in the directory
 ///@return 0 for success; other for notfound
-int rfs_open(const RfsRoot fs, const uint8_t *path, uint32_t path_len, RfsHandle *out, uint32_t *size);
+int erfs_open(const ErfsRoot fs, const uint8_t *path, uint32_t path_len, ErfsHandle *out, uint32_t *size);
 
 /// get flags of an entry (directry or file)
 ///@param entry entry (directry or file)
 ///@param flags [out] flags
 ///@return flags
-uint32_t rfs_entryflags(const RfsHandle entry, uint32_t *flags);
+uint32_t erfs_entryflags(const ErfsHandle entry, uint32_t *flags);
 
 /// get name of an entry (directry or file)
 ///@param fs the file system
@@ -102,7 +99,7 @@ uint32_t rfs_entryflags(const RfsHandle entry, uint32_t *flags);
 ///@param out pointer to the content
 ///@param size file size
 ///@return 0 for success; other for notfound
-int rfs_entryname(const RfsRoot fs, const RfsHandle entry, const uint8_t **out, uint32_t *size);
+int erfs_entryname(const ErfsRoot fs, const ErfsHandle entry, const uint8_t **out, uint32_t *size);
 
 /// read a regular file
 ///@param fs the file system
@@ -110,7 +107,7 @@ int rfs_entryname(const RfsRoot fs, const RfsHandle entry, const uint8_t **out, 
 ///@param out pointer to the content
 ///@param size file size
 ///@return 0 for success; other for notfound
-int rfs_readfile(const RfsRoot fs, const RfsHandle entry, const uint8_t **out, uint32_t *size);
+int erfs_readfile(const ErfsRoot fs, const ErfsHandle entry, const uint8_t **out, uint32_t *size);
 
 /// get flags of an entry (directry or file)
 ///@param fs the file system
@@ -118,26 +115,24 @@ int rfs_readfile(const RfsRoot fs, const RfsHandle entry, const uint8_t **out, u
 ///@param index entry index
 ///@param out out entry
 ///@return 0 for success; other for notfound
-int rfs_readdir(const RfsRoot fs, const RfsHandle dir, uint32_t index, RfsHandle *out);
+int erfs_readdir(const ErfsRoot fs, const ErfsHandle dir, uint32_t index, ErfsHandle *out);
 
 
-enum RfsTravelType {
-    RFS_TRAVEL_DIR_ENTER,
-    RFS_TRAVEL_DIR_LEAVE,
-    RFS_TRAVEL_FILE,
+enum ErfsTravelType {
+    ERFS_TRAVEL_DIR_ENTER,
+    ERFS_TRAVEL_DIR_LEAVE,
+    ERFS_TRAVEL_FILE,
 };
 
-typedef int (*rfs_visit) (const RfsRoot fs, const RfsHandle entry, enum RfsTravelType type, void* ctx);
+typedef int (*ErfsVisitFn) (const ErfsRoot fs, const ErfsHandle entry, enum ErfsTravelType type, void* ctx);
 
 /// travel the resource filesystem
 ///@param fs the file system
 ///@param func callback function
 ///@param ctx context
 ///@return 0 for success; other for notfound
-int rfs_travel(const RfsRoot fs, rfs_visit func, void* ctx);
+int erfs_travel(const ErfsRoot fs, ErfsVisitFn func, void* ctx);
 
 #if defined(__cplusplus)
 }
 #endif
-
-#endif // !defined(__RESOURCE_FS_H__)

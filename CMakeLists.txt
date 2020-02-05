@@ -12,7 +12,7 @@ find_package(GTest REQUIRED)
 
 
 include_directories(
-    resource_fs/src
+    erfs-rt/src
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/thirdparties/src/zlib
 )
@@ -26,46 +26,46 @@ link_directories(
 #
 # Resource Filesystem Readonly
 #
-set(RFS_ROM "rfs_rt")
-set(RFS_ROM_FILES "resource_fs/src/resource_fs.c")
-add_library(${RFS_ROM} STATIC "${RFS_ROM_FILES}")
+set(ERFS "erfs_rt")
+set(ERFS_FILES "erfs-rt/src/resource_fs.c")
+add_library(${ERFS} STATIC "${ERFS_FILES}")
 
 #
 # generator 
 #
-set(RFS_APP "rfs_gen")
-set(RFS_APP_FILES 
-    rfs_gen/src/main.cpp
-    rfs_gen/src/rfs_generator.cpp
-    rfs_gen/src/gzip_file.cpp
+set(ERFS_GEN "erfs_gen")
+set(ERFS_GEN_FILES 
+    erfs-gen/src/main.cpp
+    erfs-gen/src/erfs_generator.cpp
+    erfs-gen/src/gzip_file.cpp
     )
-add_executable(${RFS_APP}  "${RFS_APP_FILES}")
-target_link_libraries(${RFS_APP} libz.a)
+add_executable(${ERFS_GEN}  "${ERFS_GEN_FILES}")
+target_link_libraries(${ERFS_GEN} libz.a)
 
 #
 # generate resourc_fs .c source file
 #
-function(gen_rfs_source sourcedir id target)
+function(gen_erfs_source sourcedir id target)
     add_custom_command(
         OUTPUT ${target}/rfs_${id}.c ${target}/rfs_${id}.h
-        COMMAND ${RFS_APP} --gzip --rust ${sourcedir} ${id} ${target}
-        COMMENT "Generating resourc_fs .c source file from: ${sourcedir}"
+        COMMAND ${ERFS_GEN} --gzip --rust ${sourcedir} ${id} ${target}
+        COMMENT "Generating ERFS source file from: ${sourcedir}"
     )
 endfunction()
 
-gen_rfs_source("${CMAKE_CURRENT_SOURCE_DIR}/resource_fs" "rfsrc" "${CMAKE_CURRENT_BINARY_DIR}")
+gen_erfs_source("${CMAKE_CURRENT_SOURCE_DIR}/erfs-rt" "rfsrc" "${CMAKE_CURRENT_BINARY_DIR}")
 
 
 #
 # Unit test
 #
-set(RFS_UT "rfs_ut")
-set(RFS_UT_FILES resource_fs/tests/rfs_test.cpp ${CMAKE_CURRENT_BINARY_DIR}/rfs_rfsrc.c)
-add_executable(${RFS_UT} ${RFS_UT_FILES} ${RFS_ROM_FILES})
-#target_link_libraries(${RFS_UT}  GTest::GTest GTest::Main -lgcov)
-target_link_libraries(${RFS_UT}  GTest::GTest GTest::Main)
-#set_target_properties(${RFS_UT} PROPERTIES COMPILE_FLAGS "-fprofile-arcs -ftest-coverage")
-add_test(${RFS_UT} ${RFS_UT})
+set(ERFS_UT "erfs_ut")
+set(ERFS_UT_FILES erfs-rt/tests/erfs_test.cpp ${CMAKE_CURRENT_BINARY_DIR}/erfs_rfsrc.c)
+add_executable(${ERFS_UT} ${ERFS_UT_FILES} ${ERFS_FILES})
+#target_link_libraries(${ERFS_UT}  GTest::GTest GTest::Main -lgcov)
+target_link_libraries(${ERFS_UT}  GTest::GTest GTest::Main)
+#set_target_properties(${ERFS_UT} PROPERTIES COMPILE_FLAGS "-fprofile-arcs -ftest-coverage")
+add_test(${ERFS_UT} ${ERFS_UT})
 
 #
 #

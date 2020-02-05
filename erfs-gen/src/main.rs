@@ -1,6 +1,6 @@
 use std::env;
 
-use rfs_gen::rfs_generate;
+use erfs_gen::erfs_generate;
 
 fn usage () {
     let args: Vec<String> = env::args().collect();
@@ -47,6 +47,6 @@ fn main() {
     }
 
     println!("{:?}, option: {}", real_args, option);
-    rfs_generate(&real_args[0], &real_args[1], option, &real_args[2]);
+    erfs_generate(&real_args[0], &real_args[1], option, &real_args[2]);
     
 }
