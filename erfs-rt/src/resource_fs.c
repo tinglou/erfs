@@ -24,7 +24,7 @@ int erfs_read(const ErfsRoot fs, const uint8_t *path, uint32_t path_len, const u
 }
 
 
-static int strcmp_withlength (const uint8_t *s1, int l1, const uint8_t *s2, int l2) {
+static int strcmp_withlength (const int8_t *s1, int l1, const int8_t *s2, int l2) {
     int minlen = (l1 < l2)? l1 : l2;
     for(int i = 0; i < minlen; i++, s1++, s2++){
         if(*s1 < *s2) {
@@ -57,7 +57,7 @@ static int erfs_binarysearch(const ErfsRoot fs, const ErfsHandle handle, const u
         mname = fs->data + mentry->name_offset;
         mlen = mentry->name_size;
 
-        cmp = strcmp_withlength(mname, mlen, name, len);
+        cmp = strcmp_withlength((const int8_t *)mname, mlen, (const int8_t *)name, len);
         if (cmp < 0) {
             L = m + 1;
         } else if (cmp > 0) {
@@ -132,8 +132,8 @@ int erfs_open(const ErfsRoot fs, const uint8_t *path, uint32_t path_len, ErfsHan
 
 /// get flags of an entry (directry or file)
 ///@param entry entry (directry or file)
-///@return flags
-uint32_t erfs_entryflags(const ErfsHandle handle, uint32_t *flags) {
+///@return ERFS_OK for success
+int erfs_entryflags(const ErfsHandle handle, uint32_t *flags) {
     CHECK_NULL(handle);
     *flags = handle->flags;
     return ERFS_OK;
@@ -195,7 +195,7 @@ int erfs_readdir(const ErfsRoot fs, const ErfsHandle handle, uint32_t index, Erf
 }
 
 
-int rfs_travel_itr(const ErfsRoot fs, ErfsHandle handle, ErfsVisitFn func, void* ctx) {
+static int erfs_travel_itr(const ErfsRoot fs, ErfsHandle handle, ErfsVisitFn func, void* ctx) {
     int result = 0;
 
     if ((handle->flags & ERFS_DIRECTORY) != 0) {
@@ -207,7 +207,7 @@ int rfs_travel_itr(const ErfsRoot fs, ErfsHandle handle, ErfsVisitFn func, void*
         // directory entries
         int size = handle->data_size;
         for (int i = 0; i < size; i++) {
-            result = rfs_travel_itr(fs, fs->entries + (handle->data_offset + i), func, ctx);
+            result = erfs_travel_itr(fs, fs->entries + (handle->data_offset + i), func, ctx);
             if (result) {
                 return result;
             }
@@ -238,5 +238,5 @@ int erfs_travel(const ErfsRoot fs, ErfsVisitFn func, void* ctx) {
     ErfsHandle dir = fs->entries;
     CHECK_NULL(dir);
 
-    return rfs_travel_itr(fs, dir, func, ctx);
+    return erfs_travel_itr(fs, dir, func, ctx);
 }

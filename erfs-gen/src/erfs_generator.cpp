@@ -536,12 +536,13 @@ static int callback_directory_entry (std::shared_ptr<RfsGenEntry>& entry, enum R
             // name
             << entry->name_offset() << ", " << entry->name().length()
             // content
-            << ", " << entry->data_offset() << ", " << entry->size()
-            // flags
-            << ", 0";
+            << ", " << entry->data_offset() << ", " << entry->size();
+        // flags
         if ((entry->flags() & ERFS_GZIPPED) != 0) {
-            c->os<< " | ERFS_GZIPPED";
-        } 
+            c->os<< ", ERFS_GZIPPED";
+        } else {
+            c->os<< ", 0";
+        }
         c->os<< "}";
     }
     return 0;

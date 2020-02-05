@@ -91,7 +91,7 @@ int erfs_open(const ErfsRoot fs, const uint8_t *path, uint32_t path_len, ErfsHan
 ///@param entry entry (directry or file)
 ///@param flags [out] flags
 ///@return flags
-uint32_t erfs_entryflags(const ErfsHandle entry, uint32_t *flags);
+int erfs_entryflags(const ErfsHandle entry, uint32_t *flags);
 
 /// get name of an entry (directry or file)
 ///@param fs the file system

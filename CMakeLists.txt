@@ -47,7 +47,7 @@ target_link_libraries(${ERFS_GEN} libz.a)
 #
 function(gen_erfs_source sourcedir id target)
     add_custom_command(
-        OUTPUT ${target}/rfs_${id}.c ${target}/rfs_${id}.h
+        OUTPUT ${target}/erfs_${id}.c ${target}/erfs_${id}.h
         COMMAND ${ERFS_GEN} --gzip --rust ${sourcedir} ${id} ${target}
         COMMENT "Generating ERFS source file from: ${sourcedir}"
     )

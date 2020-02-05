@@ -4,7 +4,7 @@ extern crate cc;
 fn generate_rfs_ut() {
     use erfs_gen::erfs_generate;
     {
-        erfs_generate("../erfs-rt/src", "gensrc", 6, "src");
+        erfs_generate("../erfs-gen", "gensrc", 6, "src");
     }
 }
 

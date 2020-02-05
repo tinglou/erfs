@@ -8,7 +8,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/tinglou/resource-fs"
 homepage = "https://github.com/tinglou/resource-fs"
-description = "Embedded resource file system: runtime api the access embedded resources."
+description = "Embedded resource file system(C/Rust): runtime api the access embedded resources."
 
 [dependencies]
 
