@@ -43,7 +43,7 @@ add_executable(${ERFS_GEN}  "${ERFS_GEN_FILES}")
 target_link_libraries(${ERFS_GEN} libz.a)
 
 #
-# generate resourc_fs .c source file
+# generate ERFS .c source file
 #
 function(gen_erfs_source sourcedir id target)
     add_custom_command(
