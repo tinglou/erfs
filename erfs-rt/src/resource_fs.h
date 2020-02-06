@@ -40,6 +40,10 @@ typedef const ErfsFileSystem * ErfsRoot;
 #else // defined(ERFS_IMPL)
 typedef unsigned int uint32_t;
 typedef unsigned char uint8_t;
+// https://stackoverflow.com/questions/4079243/how-can-i-use-sizeof-in-a-preprocessor-macro
+//https://stackoverflow.com/questions/1597007/creating-c-macro-with-and-line-token-concatenation-with-positioning-macr
+#define BUILD_BUG_ON(condition) typedef char p__LINE__ [ (condition) ? -1 : 1];
+BUILD_BUG_ON( sizeof(uint32_t) != 4 );
 
 typedef const void* ErfsRoot;
 typedef const void* ErfsHandle;
