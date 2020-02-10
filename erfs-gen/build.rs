@@ -15,6 +15,7 @@ fn build_cpp_gen() {
     build.compile("rfs_gen_cpp");  
 }
 
+#[allow(dead_code)]
 fn generate_rust_binding() {
     use bindgen::builder;
     {

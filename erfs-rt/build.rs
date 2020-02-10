@@ -12,6 +12,7 @@ fn build_c_rt() {
     build.compile("erfs_c_rt");  
 }
 
+#[allow(dead_code)]
 fn generate_rust_binding() {
     use bindgen::builder;
     {
