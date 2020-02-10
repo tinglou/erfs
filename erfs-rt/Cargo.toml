@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 readme = "../README.md"
 repository = "https://github.com/tinglou/erfs"
 homepage = "https://github.com/tinglou/erfs"
-description = "Embedded resource file system(C/Rust): runtime api the access embedded resources."
+description = "Embedded resource file system(C/Rust): runtime api to access embedded resources."
 
 [dependencies]
 
