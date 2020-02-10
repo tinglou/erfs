@@ -25,5 +25,7 @@ fn generate_rust_binding() {
 
 fn main() {
     build_c_rt();
-    generate_rust_binding();
+
+    // commented for crates.io, because src directory is read-only
+    // generate_rust_binding();
 }

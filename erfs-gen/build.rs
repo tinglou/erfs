@@ -34,5 +34,6 @@ fn main() {
         */
     build_cpp_gen();
 
-    generate_rust_binding();
+    // commented for crates.io, because src directory is read-only
+    // generate_rust_binding();
 }
