@@ -3,12 +3,6 @@ extern crate erfs_rt;
 
 pub mod erfs_gensrc;
 
-
-fn main() {
-    println!("Hello World!");
-}
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -16,7 +10,7 @@ mod tests {
 
     #[test]
     fn test_read() {
-        let fs = erfs_gensrc::rfs_root();
+        let fs = erfs_gensrc::erfs_root();
         let file = "/tests/erfsgen_it.rs";
         let data = read(fs, file).expect("read error");
         let data = String::from_utf8_lossy(data);
@@ -25,7 +19,7 @@ mod tests {
 
     #[test]
     fn test_open_file() {
-        let fs = erfs_gensrc::rfs_root();
+        let fs = erfs_gensrc::erfs_root();
         let file = "/src/lib.rs";
         let (handle, size) = open(fs, file).expect("open error");
         println!("size of {}: {}", file, size);
@@ -41,7 +35,7 @@ mod tests {
 
     #[test]
     fn test_open_file1() {
-        let fs = erfs_gensrc::rfs_root();
+        let fs = erfs_gensrc::erfs_root();
         let file = "/tests/erfsgen_it.rs";
         let (handle, size) = open(fs, file).expect("open error");
         println!("size of {}: {}", file, size);
@@ -60,7 +54,7 @@ mod tests {
 
     #[test]
     fn test_open_dir() {
-        let fs = erfs_gensrc::rfs_root();
+        let fs = erfs_gensrc::erfs_root();
         let file = "/src";
         let (handle, size) = open(fs, file).expect("open error");
         println!("size of {}: {}", file, size);

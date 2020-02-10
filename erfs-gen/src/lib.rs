@@ -1,3 +1,7 @@
+//! # erfs-gen (Embedded Resource Filesystem - generator)
+//!
+//! `erfs-gen` generates c/rust codes which can be accessed by `erfs-rt`.
+
 extern crate deflate;
 use std::ffi::CString;
 
@@ -8,6 +12,7 @@ mod erfs_gen_binding;
 
 mod gzip_file;
 
+/// generate c/rust code from a directory
 pub fn erfs_generate(path: &str, id: &str, options: i32, target_dir: &str) -> i32 {
     let cpath = CString::new(path.as_bytes()).expect("CString::new failed");
     let cid = CString::new(id.as_bytes()).expect("CString::new failed");

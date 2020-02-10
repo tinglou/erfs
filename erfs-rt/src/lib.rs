@@ -1,3 +1,8 @@
+//! # erfs-rt (Embedded Resource Filesystem - runtime libarary)
+//!
+//! `erfs-rt` access the generated fs.
+
+
 #[allow(dead_code)]
 #[allow(non_camel_case_types)]
 #[allow(non_upper_case_globals)]
@@ -5,9 +10,13 @@ mod erfs_binding;
 
 use std::slice;
 
-use erfs_binding::ErfsRoot;
-use erfs_binding::ErfsHandle;
+/// handle of a ERFS instance, returned by the generated codes.
+pub use erfs_binding::ErfsRoot;
 
+/// handle of a directory entry
+pub use erfs_binding::ErfsHandle;
+
+/// get content of specified file. 
 pub fn read(fs: ErfsRoot, path: &str) -> Result<&'static [u8], i32> {
     let mut buf = 0 as *const u8;
     let mut size :u32 = 0;
@@ -27,6 +36,7 @@ pub fn read(fs: ErfsRoot, path: &str) -> Result<&'static [u8], i32> {
     }  
 }
 
+/// get directory entry handle from pathname.
 pub fn open(fs: ErfsRoot, path: &str) -> Result<(ErfsHandle, u32), i32> {
     let mut handle: ErfsHandle = 0 as ErfsHandle;
     let mut size :u32 = 0;
@@ -44,6 +54,7 @@ pub fn open(fs: ErfsRoot, path: &str) -> Result<(ErfsHandle, u32), i32> {
     }  
 }
 
+/// get flags of the specified directory entry.
 pub fn entry_flags(entry: ErfsHandle) -> Result<u32, i32> {
     let mut flags :u32 = 0;
     let pflags = &mut flags as *mut u32;
@@ -58,6 +69,22 @@ pub fn entry_flags(entry: ErfsHandle) -> Result<u32, i32> {
     }
 }
 
+/// get size of the specified directory entry.
+pub fn entry_size(entry: ErfsHandle) -> Result<u32, i32> {
+    let mut size :u32 = 0;
+    let psize = &mut size as *mut u32;
+    let ret:i32;
+    unsafe { 
+        ret = erfs_binding::erfs_entryflags(entry, psize);
+    }
+    if ret == 0 {
+        Ok(size)
+    } else {
+        Err(ret as i32)
+    }
+}
+
+/// get file name of a directory entry
 pub fn entry_name(fs: ErfsRoot, entry: ErfsHandle) -> Result<&'static [u8], i32> {
     let mut buf = 0 as *const u8;
     let mut size :u32 = 0;
@@ -77,6 +104,7 @@ pub fn entry_name(fs: ErfsRoot, entry: ErfsHandle) -> Result<&'static [u8], i32>
     } 
 }
 
+/// get content of a directory entry
 pub fn read_file(fs: ErfsRoot, entry: ErfsHandle) -> Result<&'static [u8], i32> {
     let mut buf = 0 as *const u8;
     let mut size :u32 = 0;
@@ -96,6 +124,7 @@ pub fn read_file(fs: ErfsRoot, entry: ErfsHandle) -> Result<&'static [u8], i32> 
     } 
 }
 
+/// read a directory
 pub fn read_dir(fs: ErfsRoot, dir: ErfsHandle, index: u32) -> Result<ErfsHandle, i32> {
     let mut handle: ErfsHandle = 0 as ErfsHandle;
     let phandle = &mut handle as *mut ErfsHandle;

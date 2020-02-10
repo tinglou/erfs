@@ -139,6 +139,16 @@ int erfs_entryflags(const ErfsHandle handle, uint32_t *flags) {
     return ERFS_OK;
 }
 
+/// get flags of an entry (directry or file)
+///@param handle entry (directry or file)
+///@param flags [out] size
+///@return size of file or dirctory
+int erfs_entrysize(const ErfsHandle handle, uint32_t *size) {
+    CHECK_NULL(handle);
+    *size = handle->data_size;
+    return ERFS_OK;    
+}
+
 /// get name of an entry (directry or file)
 ///@param fs the file system
 ///@param handle entry (directry or file)

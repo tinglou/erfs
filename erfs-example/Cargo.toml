@@ -9,7 +9,7 @@ readme = "README.md"
 repository = "https://github.com/tinglou/resource-fs"
 homepage = "https://github.com/tinglou/resource-fs"
 
-description = "Embedded resource file system: example."
+description = "Embedded resource file system (C/Rust): example."
 
 [dependencies]
 erfs-rt = { path = "../erfs-rt" }

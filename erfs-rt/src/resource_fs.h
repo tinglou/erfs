@@ -97,6 +97,12 @@ int erfs_open(const ErfsRoot fs, const uint8_t *path, uint32_t path_len, ErfsHan
 ///@return flags
 int erfs_entryflags(const ErfsHandle entry, uint32_t *flags);
 
+/// get size of an entry (directry or file)
+///@param entry entry (directry or file)
+///@param flags [out] size
+///@return size of file or dirctory
+int erfs_entrysize(const ErfsHandle entry, uint32_t *size);
+
 /// get name of an entry (directry or file)
 ///@param fs the file system
 ///@param entry entry (directry or file)

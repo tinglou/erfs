@@ -6,10 +6,10 @@ authors = ["Lou, Ting <ting.lou@gmail.com>"]
 edition = "2018"
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/tinglou/resource-fs"
-homepage = "https://github.com/tinglou/resource-fs"
+repository = "https://github.com/tinglou/erfs"
+homepage = "https://github.com/tinglou/erfs"
 
-description = "Embedded resource file system(C/Rust): tool generate C/Rust source files from a resource directory."
+description = "Embedded resource file system(C/Rust): tool to generate C/Rust source files from a resource directory."
 
 [dependencies]
 deflate = "0.8.2"

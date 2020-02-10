@@ -5,7 +5,7 @@
 
 
 namespace {
-const ErfsRoot fs = rfs_rfsrc();
+const ErfsRoot fs = erfs_gen_rfsrc();
 
 
 extern "C" int list_callback (const ErfsRoot fs, const ErfsHandle entry, enum ErfsTravelType type, void* ctx) {
