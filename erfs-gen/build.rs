@@ -1,4 +1,5 @@
 extern crate cc;
+use std::env;
 
 fn build_cpp_gen() {
     let src = [
@@ -22,7 +23,9 @@ fn generate_rust_binding() {
         // Configure and generate bindings.
         let bindings = builder().header("src/erfs_generator.h").generate().unwrap();
         // Write the generated bindings to an output file.
-        bindings.write_to_file("src/erfs_gen_binding.rs").unwrap();
+        let mut outfile = env::var("OUT_DIR").unwrap();
+        outfile += "/erfs_gen_binding.rs";
+        bindings.write_to_file(outfile).unwrap();
     }
 }
 
@@ -36,5 +39,5 @@ fn main() {
     build_cpp_gen();
 
     // commented for crates.io, because src directory is read-only
-    // generate_rust_binding();
+    generate_rust_binding();
 }
